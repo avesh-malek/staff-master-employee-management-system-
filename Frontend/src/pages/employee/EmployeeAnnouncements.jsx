@@ -1,27 +1,51 @@
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchAnnouncements,
+  fetchUnreadCount,
+  markAnnouncementRead,
+} from "../../features/announcements/announcementSlice";
+
 const EmployeeAnnouncements = () => {
+  const dispatch = useDispatch();
+  const { list, loading, error } = useSelector((state) => state.announcements);
+
+  useEffect(() => {
+    dispatch(fetchAnnouncements());
+    dispatch(fetchUnreadCount());
+  }, [dispatch]);
+
+  const handleMarkRead = async (id) => {
+    await dispatch(markAnnouncementRead(id));
+    dispatch(fetchUnreadCount());
+  };
+
   return (
     <div>
       <h3 className="mb-4 fw-bold">Company Announcements</h3>
 
-      <div className="card shadow-sm mb-3">
-        <div className="card-body">
-          <h5 className="fw-bold">Office Holiday</h5>
-          <p>
-            Office will remain closed on Friday due to maintenance.
-          </p>
-          <small className="text-muted">Posted on 05 Feb 2026</small>
-        </div>
-      </div>
+      {error && <div className="alert alert-danger py-2">{error}</div>}
+      {loading && <p>Loading announcements...</p>}
+      {!loading && list.length === 0 && <p className="text-muted">No announcements available</p>}
 
-      <div className="card shadow-sm mb-3">
-        <div className="card-body">
-          <h5 className="fw-bold">New HR Policy</h5>
-          <p>
-            New leave policy will be effective from next month.
-          </p>
-          <small className="text-muted">Posted on 02 Feb 2026</small>
+      {list.map((announcement) => (
+        <div className="card shadow-sm mb-3" key={announcement._id}>
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center">
+              <h5 className="fw-bold mb-0">{announcement.title}</h5>
+              {announcement.unread ? (
+                <button className="btn btn-sm btn-outline-primary" onClick={() => handleMarkRead(announcement._id)}>
+                  Mark as read
+                </button>
+              ) : (
+                <span className="badge bg-success">Read</span>
+              )}
+            </div>
+            <p className="mt-2">{announcement.message}</p>
+            <small className="text-muted">Posted on {new Date(announcement.createdAt).toLocaleDateString()}</small>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 };

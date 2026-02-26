@@ -1,66 +1,80 @@
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchMyEmployee,
+  uploadMyProfilePicture,
+} from "../../features/employees/employeeSlice";
+import { toAssetUrl } from "../../services/api";
+
 const Profile = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { myProfile, actionLoading, error } = useSelector((state) => state.employees);
+  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchMyEmployee());
+  }, [dispatch]);
+
+  const handleUpload = async () => {
+    if (!file) return;
+    const result = await dispatch(uploadMyProfilePicture(file));
+    if (!result.error) setFile(null);
+  };
+
   return (
     <div>
       <h3 className="mb-4 fw-bold">My Profile</h3>
+      {error && <div className="alert alert-danger py-2">{error}</div>}
 
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="card shadow-sm">
             <div className="card-body">
-
-              {/* Profile Header */}
               <div className="text-center mb-4">
                 <img
-                  src="/assets/default-user.png"
+                  src={
+                    myProfile?.profilePic
+                      ? toAssetUrl(myProfile.profilePic)
+                      :
+                    "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"
+                  }
                   alt="Profile"
                   className="rounded-circle mb-2"
                   style={{ width: "100px", height: "100px", objectFit: "cover" }}
                 />
-                <h5 className="mb-0">Avesh Malek</h5>
-                <small className="text-muted">Developer</small>
+                <h5 className="mb-0">{myProfile?.name || user?.name || "-"}</h5>
+                <small className="text-muted">{myProfile?.designation || user?.role || "-"}</small>
 
-                {/* ONLY THIS ACTION */}
-                <div className="mt-2">
-                  <button className="btn btn-sm btn-outline-primary">
-                    Change Profile Picture
+                <div className="mt-2 d-flex justify-content-center gap-2">
+                  <input
+                    type="file"
+                    className="form-control form-control-sm"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={(event) => setFile(event.target.files?.[0] || null)}
+                    style={{ maxWidth: "260px" }}
+                  />
+                  <button className="btn btn-sm btn-outline-primary" onClick={handleUpload} disabled={actionLoading || !file}>
+                    {actionLoading ? "Uploading..." : "Update Photo"}
                   </button>
                 </div>
               </div>
 
               <hr />
 
-              {/* Read-only Info */}
               <div className="row mb-3">
-                <div className="col-sm-6">
-                  <label className="text-muted">Employee ID</label>
-                  <p className="fw-semibold">EMP001</p>
-                </div>
-                <div className="col-sm-6">
-                  <label className="text-muted">Department</label>
-                  <p className="fw-semibold">IT</p>
-                </div>
+                <div className="col-sm-6"><label className="text-muted">Employee Code</label><p className="fw-semibold">{myProfile?.employeeCode || "-"}</p></div>
+                <div className="col-sm-6"><label className="text-muted">Department</label><p className="fw-semibold">{myProfile?.department || "-"}</p></div>
               </div>
 
               <div className="row mb-3">
-                <div className="col-sm-6">
-                  <label className="text-muted">Email</label>
-                  <p className="fw-semibold">avesh@gmail.com</p>
-                </div>
-                <div className="col-sm-6">
-                  <label className="text-muted">Joining Date</label>
-                  <p className="fw-semibold">12 Jan 2024</p>
-                </div>
+                <div className="col-sm-6"><label className="text-muted">Email</label><p className="fw-semibold">{myProfile?.email || user?.email || "-"}</p></div>
+                <div className="col-sm-6"><label className="text-muted">Joining Date</label><p className="fw-semibold">{myProfile?.joiningDate ? new Date(myProfile.joiningDate).toLocaleDateString() : "-"}</p></div>
               </div>
 
               <div className="row mb-3">
-                <div className="col-sm-6">
-                  <label className="text-muted">Salary</label>
-                  <p className="fw-semibold">₹50,000</p>
-                </div>
-                <div className="col-sm-6">
-                  <label className="text-muted">Status</label>
-                  <span className="badge bg-success">Active</span>
-                </div>
+                <div className="col-sm-6"><label className="text-muted">Salary</label><p className="fw-semibold">{myProfile?.salary ? `Rs ${Number(myProfile.salary).toLocaleString()}` : "-"}</p></div>
+                <div className="col-sm-6"><label className="text-muted">Status</label><span className={`badge ${myProfile?.isActive ? "bg-success" : "bg-danger"}`}>{myProfile?.isActive ? "Active" : "Inactive"}</span></div>
               </div>
 
             </div>

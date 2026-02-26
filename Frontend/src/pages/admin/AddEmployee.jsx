@@ -1,91 +1,195 @@
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { createEmployee } from "../../features/employees/employeeSlice";
+
+const initialForm = {
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  department: "",
+  designation: "",
+  employmentType: "Full-time",
+  salary: "",
+  joiningDate: "",
+  role: "employee",
+  isActive: true,
+};
+
 const AddEmployee = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { actionLoading, error } = useSelector((state) => state.employees);
+  const [form, setForm] = useState(initialForm);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      ...form,
+      salary: Number(form.salary),
+      isActive: form.isActive === "false" ? false : Boolean(form.isActive),
+    };
+
+    const result = await dispatch(createEmployee(payload));
+    if (!result.error) navigate("/admin/employees");
+  };
+
   return (
     <div>
       <h3 className="mb-4 fw-bold">Add Employee</h3>
 
       <div className="card shadow-sm">
         <div className="card-body">
-          <form>
+          {error && <div className="alert alert-danger py-2">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
             <div className="row g-3">
-              {/* Employee ID (auto) */}
               <div className="col-md-4">
-                <label className="form-label">Employee ID</label>
+                <label className="form-label">Name</label>
                 <input
                   type="text"
                   className="form-control"
-                  value="Auto-generated" // will fetch from backend later
-                  disabled
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
                 />
               </div>
 
-              {/* Name */}
-              <div className="col-md-4">
-                <label className="form-label">Name</label>
-                <input type="text" className="form-control" placeholder="Full Name" />
-              </div>
-
-              {/* Email */}
               <div className="col-md-4">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-control" placeholder="Email" />
+                <input
+                  type="email"
+                  className="form-control"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Phone */}
               <div className="col-md-4">
                 <label className="form-label">Phone</label>
-                <input type="tel" className="form-control" placeholder="Phone Number" />
+                <input
+                  type="tel"
+                  className="form-control"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Address */}
-              <div className="col-md-8">
-                <label className="form-label">Address</label>
-                <textarea className="form-control" rows="2" placeholder="Address"></textarea>
-              </div>
-
-              {/* Department */}
               <div className="col-md-4">
                 <label className="form-label">Department</label>
-                <input type="text" className="form-control" placeholder="IT, HR..." />
+                <input
+                  type="text"
+                  className="form-control"
+                  name="department"
+                  value={form.department}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Designation */}
               <div className="col-md-4">
                 <label className="form-label">Designation</label>
-                <input type="text" className="form-control" placeholder="Developer, Manager..." />
+                <input
+                  type="text"
+                  className="form-control"
+                  name="designation"
+                  value={form.designation}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Salary */}
+              <div className="col-md-4">
+                <label className="form-label">Employment Type</label>
+                <select
+                  className="form-select"
+                  name="employmentType"
+                  value={form.employmentType}
+                  onChange={handleChange}
+                >
+                  <option value="Full-time">Full-time</option>
+                  <option value="Intern">Intern</option>
+                  <option value="Contract">Contract</option>
+                </select>
+              </div>
+
               <div className="col-md-4">
                 <label className="form-label">Salary</label>
-                <input type="number" className="form-control" placeholder="Salary" />
+                <input
+                  type="number"
+                  className="form-control"
+                  name="salary"
+                  value={form.salary}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Joining Date */}
               <div className="col-md-4">
                 <label className="form-label">Joining Date</label>
-                <input type="date" className="form-control" />
+                <input
+                  type="date"
+                  className="form-control"
+                  name="joiningDate"
+                  value={form.joiningDate}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              {/* Role */}
               <div className="col-md-4">
                 <label className="form-label">Role</label>
-                <select className="form-select">
+                <select
+                  className="form-select"
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                >
                   <option value="employee">Employee</option>
-                  <option value="hr">HR Manager</option>
+                  <option value="hr">HR</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
 
-              {/* Profile Picture */}
               <div className="col-md-4">
-                <label className="form-label">Profile Picture</label>
-                <input type="file" className="form-control" />
+                <label className="form-label">Account Status</label>
+                <select
+                  className="form-select"
+                  name="isActive"
+                  value={String(form.isActive)}
+                  onChange={handleChange}
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
               </div>
 
-              {/* Submit */}
+              <div className="col-md-8">
+                <label className="form-label">Address</label>
+                <textarea
+                  className="form-control"
+                  rows="2"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                />
+              </div>
+
               <div className="col-12 text-end mt-2">
-                <button type="submit" className="btn btn-primary">
-                  Add Employee
+                <button type="submit" className="btn btn-primary" disabled={actionLoading}>
+                  {actionLoading ? "Adding..." : "Add Employee"}
                 </button>
               </div>
             </div>

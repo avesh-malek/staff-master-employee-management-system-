@@ -1,71 +1,198 @@
-// features/employees/employeeSlice.js
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { apiRequest } from "../../services/api";
+
+export const fetchEmployees = createAsyncThunk(
+  "employees/fetchEmployees",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({ path: "/api/employees", token });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchEmployeeById = createAsyncThunk(
+  "employees/fetchEmployeeById",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({ path: `/api/employees/${id}`, token });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchMyEmployee = createAsyncThunk(
+  "employees/fetchMyEmployee",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({ path: "/api/employees/me", token });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createEmployee = createAsyncThunk(
+  "employees/createEmployee",
+  async (payload, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({
+        path: "/api/employees",
+        method: "POST",
+        token,
+        body: payload,
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateEmployee = createAsyncThunk(
+  "employees/updateEmployee",
+  async ({ id, payload }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({
+        path: `/api/employees/${id}`,
+        method: "PATCH",
+        token,
+        body: payload,
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteEmployee = createAsyncThunk(
+  "employees/deleteEmployee",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      await apiRequest({ path: `/api/employees/${id}`, method: "DELETE", token });
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const uploadMyProfilePicture = createAsyncThunk(
+  "employees/uploadMyProfilePicture",
+  async (file, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      const body = new FormData();
+      body.append("profilePic", file);
+
+      return await apiRequest({
+        path: "/api/employees/me/profile-picture",
+        method: "PATCH",
+        token,
+        body,
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 const initialState = {
-  list: [
-    {
-      id: "EMP001",
-      name: "Avesh Malek",
-      email: "avesh@example.com",
-      phone: "9876543210",
-      department: "IT",
-      designation: "Developer",
-      role: "Employee",
-      salary: 50000,
-      joiningDate: "2023-06-15",
-      address: "Mumbai, Maharashtra",
-      profilePic: "/assets/default-user.png",
-      status: "Active",
-      createdAt: "2023-06-01",
-    },
-    {
-      id: "EMP002",
-      name: "Rahul Sharma",
-      email: "rahul@example.com",
-      phone: "9876501234",
-      department: "HR",
-      designation: "HR Manager",
-      role: "HR",
-      salary: 65000,
-      joiningDate: "2022-04-10",
-      address: "Delhi, India",
-      profilePic: "/assets/default-user.png",
-      status: "Active",
-      createdAt: "2022-04-01",
-    },
-  ],
+  list: [],
+  selected: null,
+  myProfile: null,
+  loading: false,
+  actionLoading: false,
+  error: null,
 };
 
 const employeeSlice = createSlice({
   name: "employees",
   initialState,
   reducers: {
-    addEmployee: (state, action) => {
-      state.list.push(action.payload);
+    clearEmployeeState: (state) => {
+      state.list = [];
+      state.selected = null;
+      state.myProfile = null;
+      state.loading = false;
+      state.actionLoading = false;
+      state.error = null;
     },
-    updateEmployee: (state, action) => {
-      const index = state.list.findIndex(
-        emp => emp.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.list[index] = {
-          ...state.list[index],
-          ...action.payload,
-        };
-      }
-    },
-    deleteEmployee: (state, action) => {
-      state.list = state.list.filter(
-        emp => emp.id !== action.payload
-      );
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchEmployees.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEmployees.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload;
+      })
+      .addCase(fetchEmployees.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch employees";
+      })
+      .addCase(fetchEmployeeById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEmployeeById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selected = action.payload;
+        const idx = state.list.findIndex((item) => item._id === action.payload._id);
+        if (idx >= 0) state.list[idx] = action.payload;
+        else state.list.unshift(action.payload);
+      })
+      .addCase(fetchEmployeeById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch employee";
+      })
+      .addCase(fetchMyEmployee.fulfilled, (state, action) => {
+        state.myProfile = action.payload;
+      })
+      .addCase(createEmployee.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(createEmployee.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.list.unshift(action.payload);
+      })
+      .addCase(createEmployee.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to create employee";
+      })
+      .addCase(updateEmployee.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(updateEmployee.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.selected = action.payload;
+        const idx = state.list.findIndex((item) => item._id === action.payload._id);
+        if (idx >= 0) state.list[idx] = action.payload;
+      })
+      .addCase(updateEmployee.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to update employee";
+      })
+      .addCase(deleteEmployee.fulfilled, (state, action) => {
+        state.list = state.list.filter((item) => item._id !== action.payload);
+        if (state.selected?._id === action.payload) state.selected = null;
+      })
+      .addCase(uploadMyProfilePicture.fulfilled, (state, action) => {
+        state.myProfile = action.payload;
+      });
   },
 });
 
-export const {
-  addEmployee,
-  updateEmployee,
-  deleteEmployee,
-} = employeeSlice.actions;
-
+export const { clearEmployeeState } = employeeSlice.actions;
 export default employeeSlice.reducer;

@@ -1,70 +1,79 @@
-import express from "express";
-import Employee from "../models/Employee.js";
+const express = require("express");
+const {
+  createEmployee,
+  getEmployees,
+  getEmployeeById,
+  getMyEmployee,
+  updateEmployee,
+  deleteEmployee,
+  updateMyProfilePicture,
+  updateEmployeeProfilePictureById,
+} = require("../controllers/employeeController");
+const { protect } = require("../middleware/authMiddleware");
+const authorizeRoles = require("../middleware/roleMiddleware");
+const { handleValidationErrors } = require("../middleware/validationMiddleware");
+const {
+  createEmployeeValidation,
+  updateEmployeeValidation,
+  employeeIdParamValidation,
+} = require("../middleware/validators/employeeValidator");
+const { profileUpload } = require("../middleware/uploadMiddleware");
 
-const router = express.Router();
+const employeeRoutes = express.Router();
 
-/**
- * @route   POST /api/employees
- * @desc    Create employee
- */
-router.post("/", async (req, res) => {
-  try {
-    const employee = await Employee.create(req.body);
-    res.status(201).json(employee);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+employeeRoutes.post(
+  "/",
+  protect,
+  authorizeRoles("admin", "hr"),
+  createEmployeeValidation,
+  handleValidationErrors,
+  createEmployee
+);
 
-/**
- * @route   GET /api/employees
- * @desc    Get all employees
- */
-router.get("/", async (req, res) => {
-  const employees = await Employee.find();
-  res.json(employees);
-});
+employeeRoutes.get("/", protect, authorizeRoles("admin", "hr"), getEmployees);
+employeeRoutes.get("/me", protect, getMyEmployee);
 
-/**
- * @route   GET /api/employees/:id
- * @desc    Get single employee by employeeId
- */
-router.get("/:id", async (req, res) => {
-  const employee = await Employee.findOne({
-    employeeId: req.params.id,
-  });
+employeeRoutes.get(
+  "/:id",
+  protect,
+  employeeIdParamValidation,
+  handleValidationErrors,
+  getEmployeeById
+);
 
-  if (!employee) {
-    return res.status(404).json({ message: "Employee not found" });
-  }
+employeeRoutes.patch(
+  "/:id",
+  protect,
+  authorizeRoles("admin", "hr"),
+  updateEmployeeValidation,
+  handleValidationErrors,
+  updateEmployee
+);
 
-  res.json(employee);
-});
+employeeRoutes.delete(
+  "/:id",
+  protect,
+  authorizeRoles("admin"),
+  employeeIdParamValidation,
+  handleValidationErrors,
+  deleteEmployee
+);
 
-/**
- * @route   PUT /api/employees/:id
- * @desc    Update employee
- */
-router.put("/:id", async (req, res) => {
-  const employee = await Employee.findOneAndUpdate(
-    { employeeId: req.params.id },
-    req.body,
-    { new: true }
-  );
+employeeRoutes.patch(
+  "/me/profile-picture",
+  protect,
+  profileUpload.single("profilePic"),
+  updateMyProfilePicture
+);
 
-  res.json(employee);
-});
+employeeRoutes.patch(
+  "/:id/profile-picture",
+  protect,
+  authorizeRoles("admin", "hr"),
+  employeeIdParamValidation,
+  handleValidationErrors,
+  profileUpload.single("profilePic"),
+  updateEmployeeProfilePictureById
+);
 
-/**
- * @route   DELETE /api/employees/:id
- * @desc    Delete employee
- */
-router.delete("/:id", async (req, res) => {
-  await Employee.findOneAndDelete({
-    employeeId: req.params.id,
-  });
-
-  res.json({ message: "Employee deleted" });
-});
-
-export default router;
+module.exports = employeeRoutes;

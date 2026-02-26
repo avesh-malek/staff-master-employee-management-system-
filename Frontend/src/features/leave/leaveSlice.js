@@ -1,44 +1,127 @@
-// features/leave/leaveSlice.js
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { apiRequest } from "../../services/api";
+
+export const fetchLeaves = createAsyncThunk(
+  "leave/fetchLeaves",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({ path: "/api/leaves", token });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createLeave = createAsyncThunk(
+  "leave/createLeave",
+  async (payload, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({
+        path: "/api/leaves",
+        method: "POST",
+        token,
+        body: payload,
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateLeaveStatus = createAsyncThunk(
+  "leave/updateLeaveStatus",
+  async ({ id, status }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      return await apiRequest({
+        path: `/api/leaves/${id}/status`,
+        method: "PATCH",
+        token,
+        body: { status },
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteLeave = createAsyncThunk(
+  "leave/deleteLeave",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      await apiRequest({ path: `/api/leaves/${id}`, method: "DELETE", token });
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 const initialState = {
-  requests: [
-    {
-      id: "L001",
-      employeeId: "EMP001",
-      name: "Avesh Malek",
-      leaveType: "Sick",
-      fromDate: "2026-02-01",
-      toDate: "2026-02-03",
-      description: "Fever and cold",
-      status: "Pending",
-    },
-  ],
-    summary: {
-    taken: 5,
-    remaining: 7,
-  },
+  requests: [],
+  loading: false,
+  actionLoading: false,
+  error: null,
 };
 
 const leaveSlice = createSlice({
   name: "leave",
   initialState,
   reducers: {
-    updateLeaveStatus: (state, action) => {
-      const { id, status } = action.payload;
-      const leave = state.requests.find(l => l.id === id);
-      if (leave) leave.status = status;
+    clearLeaveState: (state) => {
+      state.requests = [];
+      state.loading = false;
+      state.actionLoading = false;
+      state.error = null;
     },
-
-    approveAllLeaves: (state) => {
-      state.requests.forEach(leave => {
-        if (leave.status === "Pending") {
-          leave.status = "Approved";
-        }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchLeaves.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchLeaves.fulfilled, (state, action) => {
+        state.loading = false;
+        state.requests = action.payload;
+      })
+      .addCase(fetchLeaves.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch leaves";
+      })
+      .addCase(createLeave.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(createLeave.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.requests.unshift(action.payload);
+      })
+      .addCase(createLeave.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to create leave request";
+      })
+      .addCase(updateLeaveStatus.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(updateLeaveStatus.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const index = state.requests.findIndex((item) => item._id === action.payload._id);
+        if (index >= 0) state.requests[index] = action.payload;
+      })
+      .addCase(updateLeaveStatus.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to update leave status";
+      })
+      .addCase(deleteLeave.fulfilled, (state, action) => {
+        state.requests = state.requests.filter((item) => item._id !== action.payload);
       });
-    },
   },
 });
 
-export const { updateLeaveStatus, approveAllLeaves } = leaveSlice.actions;
+export const { clearLeaveState } = leaveSlice.actions;
 export default leaveSlice.reducer;

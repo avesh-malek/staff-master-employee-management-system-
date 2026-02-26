@@ -1,69 +1,82 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const employeeSchema = new mongoose.Schema(
   {
-    employeeId: {
+    employeeCode: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      index: true,
     },
-
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      unique: true,
+      sparse: true,
+    },
     name: {
       type: String,
       required: true,
+      trim: true,
     },
-
     email: {
       type: String,
       required: true,
+      trim: true,
+      lowercase: true,
       unique: true,
     },
-
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
-
     department: {
       type: String,
       required: true,
+      trim: true,
     },
-
     designation: {
       type: String,
       required: true,
+      trim: true,
     },
-
-    role: {
+    employmentType: {
       type: String,
-      default: "Employee",
+      enum: ["Full-time", "Intern", "Contract"],
+      required: true,
     },
-
     salary: {
       type: Number,
       required: true,
+      min: 0,
     },
-
     joiningDate: {
       type: Date,
       required: true,
     },
-
     address: {
       type: String,
+      trim: true,
+      default: "",
     },
-
     profilePic: {
       type: String,
-      default: "/assets/default-user.png",
+      trim: true,
+      default: "",
     },
-
-    status: {
-      type: String,
-      default: "Active",
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Employee", employeeSchema);
+module.exports = mongoose.model("Employee", employeeSchema);

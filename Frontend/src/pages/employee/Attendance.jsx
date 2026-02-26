@@ -1,106 +1,98 @@
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { checkIn, checkOut, fetchMyAttendance } from "../../features/attendance/attendanceSlice";
+
 const Attendance = () => {
+  const dispatch = useDispatch();
+  const [month, setMonth] = useState("");
+
+  const { records, loading, actionLoading, error } = useSelector((state) => state.attendance);
+
+  useEffect(() => {
+    dispatch(fetchMyAttendance(month));
+  }, [dispatch, month]);
+
+  const todayRecord = useMemo(() => {
+    const today = new Date().toDateString();
+    return records.find((item) => new Date(item.date).toDateString() === today);
+  }, [records]);
+
+  const onCheckIn = async () => {
+    await dispatch(checkIn());
+    dispatch(fetchMyAttendance(month));
+  };
+
+  const onCheckOut = async () => {
+    await dispatch(checkOut());
+    dispatch(fetchMyAttendance(month));
+  };
+
   return (
     <div>
       <h3 className="mb-4 fw-bold">My Attendance</h3>
+      {error && <div className="alert alert-danger py-2">{error}</div>}
 
-      {/* Today Attendance */}
       <div className="card shadow-sm mb-4">
         <div className="card-body text-center">
           <h5 className="fw-bold mb-3">Today's Attendance</h5>
-
-          <div className="row mb-3">
-            <div className="col-md-3">
-              <p className="text-muted mb-1">Date</p>
-              <h6>04 Feb 2024</h6>
+          {todayRecord ? (
+            <div className="row mb-3">
+              <div className="col-md-3"><p className="text-muted mb-1">Date</p><h6>{new Date(todayRecord.date).toLocaleDateString()}</h6></div>
+              <div className="col-md-3"><p className="text-muted mb-1">Check In</p><h6 className="text-success">{todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString() : "-"}</h6></div>
+              <div className="col-md-3"><p className="text-muted mb-1">Check Out</p><h6 className="text-warning">{todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString() : "-"}</h6></div>
+              <div className="col-md-3"><p className="text-muted mb-1">Working Hours</p><h6>{todayRecord.workingHours || 0}</h6></div>
             </div>
+          ) : (
+            <p className="text-muted">No attendance record for today yet.</p>
+          )}
 
-            <div className="col-md-3">
-              <p className="text-muted mb-1">Check In</p>
-              <h6 className="text-success">09:12 AM</h6>
-            </div>
-
-            <div className="col-md-3">
-              <p className="text-muted mb-1">Check Out</p>
-              <h6 className="text-warning">Auto (06:00 PM)</h6>
-            </div>
-
-            <div className="col-md-3">
-              <p className="text-muted mb-1">Status</p>
-              <span className="badge bg-success">Present</span>
-            </div>
+          <div className="d-flex justify-content-center gap-2">
+            <button className="btn btn-primary" onClick={onCheckIn} disabled={actionLoading}>Check In</button>
+            <button className="btn btn-outline-primary" onClick={onCheckOut} disabled={actionLoading}>Check Out</button>
           </div>
-
-          <button className="btn btn-primary">Check In</button>
         </div>
       </div>
 
-      {/* Filter Section */}
       <div className="card shadow-sm mb-4">
         <div className="card-body">
           <div className="row align-items-end g-3">
             <div className="col-md-4">
               <label className="form-label">Select Month</label>
-              <input type="month" className="form-control" />
-            </div>
-
-            <div className="col-md-4">
-              <label className="form-label">Status</label>
-              <select className="form-select">
-                <option>All</option>
-                <option>Present</option>
-                <option>Absent</option>
-              </select>
-            </div>
-
-            <div className="col-md-4">
-              <button className="btn btn-primary w-100">Filter</button>
+              <input type="month" className="form-control" value={month} onChange={(e) => setMonth(e.target.value)} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Attendance Table */}
       <div className="card shadow-sm">
         <div className="card-body">
-          <table className="table table-bordered table-hover align-middle text-center">
-            <thead className="table-light">
-              <tr>
-                <th>Date</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td>01 Feb 2024</td>
-                <td>09:05 AM</td>
-                <td>06:00 PM</td>
-                <td>
-                  <span className="badge bg-success">Present</span>
-                </td>
-              </tr>
-
-              <tr>
-                <td>02 Feb 2024</td>
-                <td>—</td>
-                <td>—</td>
-                <td>
-                  <span className="badge bg-danger">Absent</span>
-                </td>
-              </tr>
-
-              <tr>
-                <td>03 Feb 2024</td>
-                <td>09:10 AM</td>
-                <td>05:55 PM</td>
-                <td>
-                  <span className="badge bg-success">Present</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {loading ? (
+            <p className="mb-0">Loading attendance...</p>
+          ) : (
+            <table className="table table-bordered table-hover align-middle text-center">
+              <thead className="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Working Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => (
+                  <tr key={record._id}>
+                    <td>{new Date(record.date).toLocaleDateString()}</td>
+                    <td>{record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : "-"}</td>
+                    <td>{record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : "-"}</td>
+                    <td>{record.workingHours || 0}</td>
+                  </tr>
+                ))}
+                {records.length === 0 && (
+                  <tr><td colSpan="4" className="text-muted">No attendance records found</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
