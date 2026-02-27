@@ -6,7 +6,7 @@ import Sidebar from "./components/Sidebar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { fetchCurrentUser } from "./features/auth/authSlice";
 import FullScreenLoader from "./components/FullScreenLoader";
-import GlobalOverlayLoader from "./components/GlobalOverlayLoader";
+
 
 const App = () => {
   const dispatch = useDispatch();
@@ -24,7 +24,7 @@ const App = () => {
 
   return (
     <>
-      <GlobalOverlayLoader />
+  
       <Navbar />
       <div className="d-flex">
         <Sidebar role={user?.role} />

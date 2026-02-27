@@ -1,5 +1,3 @@
-import { finishGlobalRequest, startGlobalRequest } from "./globalLoading";
-
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -28,7 +26,7 @@ export const apiRequest = async ({ path, method = "GET", token, body }) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  startGlobalRequest();
+
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method,
@@ -38,7 +36,7 @@ export const apiRequest = async ({ path, method = "GET", token, body }) => {
 
     return parseResponse(response);
   } finally {
-    finishGlobalRequest();
+    
   }
 };
 

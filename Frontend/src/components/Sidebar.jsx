@@ -13,7 +13,6 @@ const Sidebar = ({ role }) => {
   else if (path.includes("/admin/leaves") || path.includes("leave-requests")) active = "leave";
   else if (path.includes("leave")) active = "leave";
   else if (path.includes("profile")) active = "profile";
-  else if (path.includes("notifications")) active = "notifications";
   else if (path.includes("announcements")) active = "announcements";
 
   const navClass = (name) =>
@@ -58,11 +57,7 @@ const Sidebar = ({ role }) => {
               Announcements
             </Link>
           </li>
-          <li>
-            <Link to="/admin/notifications" className={navClass("notifications")}>
-              Notifications
-            </Link>
-          </li>
+        
         </ul>
       )}
 

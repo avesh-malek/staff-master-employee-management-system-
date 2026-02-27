@@ -3,10 +3,6 @@ const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const AppError = require("../utils/appError");
-const { sendLeaveStatusEmail } = require("./notificationService");
-const {
-  createLeaveRequestNotifications,
-} = require("./adminNotificationService");
 
 const assertObjectId = (id) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -38,8 +34,25 @@ const createLeave = async ({ payload, requester }) => {
 
   const fromDate = new Date(payload.fromDate);
   const toDate = new Date(payload.toDate);
+
   if (fromDate > toDate) {
     throw new AppError("Invalid leave dates", 400);
+  }
+
+  // Prevent overlapping leave requests
+  const existingLeave = await Leave.findOne({
+    employee: requester.employeeId,
+    status: { $ne: "rejected" },
+    $or: [
+      {
+        fromDate: { $lte: toDate },
+        toDate: { $gte: fromDate },
+      },
+    ],
+  });
+
+  if (existingLeave) {
+    throw new AppError("Leave dates overlap with existing request", 400);
   }
 
   const leave = await Leave.create({
@@ -51,10 +64,6 @@ const createLeave = async ({ payload, requester }) => {
   });
 
   const populated = await leave.populate("employee", "employeeCode name");
-  await createLeaveRequestNotifications({
-    leaveId: leave._id,
-    employeeName: populated.employee.name,
-  });
   return normalizeLeave(populated);
 };
 
@@ -73,14 +82,19 @@ const listLeaves = async ({ requester }) => {
 const getLeaveById = async ({ id, requester }) => {
   assertObjectId(id);
 
-  const leave = await Leave.findById(id).populate("employee", "employeeCode name user");
+  const leave = await Leave.findById(id).populate(
+    "employee",
+    "employeeCode name",
+  );
 
   if (!leave) {
     throw new AppError("Leave request not found", 404);
   }
 
   const isAdminOrHr = ["admin", "hr"].includes(requester.role);
-  const isOwner = requester.employeeId && leave.employee._id.toString() === requester.employeeId.toString();
+  const isOwner =
+    requester.employeeId &&
+    leave.employee._id.toString() === requester.employeeId.toString();
 
   if (!isAdminOrHr && !isOwner) {
     throw new AppError("Forbidden", 403);
@@ -90,9 +104,16 @@ const getLeaveById = async ({ id, requester }) => {
 };
 
 const updateLeaveStatus = async ({ id, status, requester }) => {
+  if (!["admin", "hr"].includes(requester.role)) {
+    throw new AppError("Forbidden", 403);
+  }
+
   assertObjectId(id);
 
-  const leave = await Leave.findById(id).populate("employee", "employeeCode name user");
+  const leave = await Leave.findById(id).populate(
+    "employee",
+    "employeeCode name",
+  );
 
   if (!leave) {
     throw new AppError("Leave request not found", 404);
@@ -102,18 +123,6 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
   leave.reviewedBy = requester.id;
   leave.reviewedAt = new Date();
   await leave.save();
-
-  if (leave.employee?.user) {
-    const user = await User.findById(leave.employee.user);
-    if (user?.email) {
-      await sendLeaveStatusEmail({
-        email: user.email,
-        status,
-        fromDate: leave.fromDate.toISOString().slice(0, 10),
-        toDate: leave.toDate.toISOString().slice(0, 10),
-      });
-    }
-  }
 
   return normalizeLeave(leave);
 };
@@ -128,7 +137,9 @@ const deleteLeave = async ({ id, requester }) => {
   }
 
   const isAdminOrHr = ["admin", "hr"].includes(requester.role);
-  const isOwner = requester.employeeId && leave.employee.toString() === requester.employeeId.toString();
+  const isOwner =
+    requester.employeeId &&
+    leave.employee.toString() === requester.employeeId.toString();
 
   if (!isAdminOrHr && !isOwner) {
     throw new AppError("Forbidden", 403);

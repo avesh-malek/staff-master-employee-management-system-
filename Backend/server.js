@@ -14,7 +14,7 @@ const employeeRoutes = require("./routes/employeeRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
+
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -47,7 +47,6 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/attendance", attendanceRoutes);
-app.use("/api/notifications", notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

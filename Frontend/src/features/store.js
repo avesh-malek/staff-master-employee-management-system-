@@ -4,7 +4,6 @@ import employeeReducer from "./employees/employeeSlice";
 import attendanceReducer from "./attendance/attendanceSlice";
 import leaveReducer from "./leave/leaveSlice";
 import announcementReducer from "./announcements/announcementSlice";
-import adminNotificationReducer from "./notifications/adminNotificationSlice";
 
 const store = configureStore({
   reducer: {
@@ -13,7 +12,7 @@ const store = configureStore({
     attendance: attendanceReducer,
     leave: leaveReducer,
     announcements: announcementReducer,
-    adminNotifications: adminNotificationReducer,
+  
   },
 });
 

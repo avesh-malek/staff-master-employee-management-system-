@@ -9,24 +9,25 @@ import {
   fetchUnreadCount,
 } from "../features/announcements/announcementSlice";
 import { clearAttendanceState } from "../features/attendance/attendanceSlice";
-import {
-  clearAdminNotificationState,
-  fetchAdminNotificationUnreadCount,
-} from "../features/notifications/adminNotificationSlice";
+import { fetchAdminLeaveUnreadCount } from "../features/leave/leaveSlice";
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { unreadCount: announcementUnreadCount } = useSelector((state) => state.announcements);
-  const { unreadCount: adminUnreadCount } = useSelector((state) => state.adminNotifications);
+  const { unreadCount: announcementUnreadCount } = useSelector(
+    (state) => state.announcements,
+  );
+const { unreadCount: leaveUnreadCount } = useSelector((state) => state.leave);
+
 
   useEffect(() => {
-    if (user) {
+    if (user?.role === "employee") {
       dispatch(fetchUnreadCount());
-      if (user.role !== "employee") {
-        dispatch(fetchAdminNotificationUnreadCount());
-      }
+    }
+
+    if (user?.role === "admin") {
+      dispatch(fetchAdminLeaveUnreadCount());
     }
   }, [dispatch, user]);
 
@@ -36,15 +37,11 @@ const Navbar = () => {
     dispatch(clearLeaveState());
     dispatch(clearAnnouncementState());
     dispatch(clearAttendanceState());
-    dispatch(clearAdminNotificationState());
     navigate("/");
   };
 
   const totalUnread =
-    user?.role === "employee"
-      ? announcementUnreadCount
-      : announcementUnreadCount + adminUnreadCount;
-
+    user?.role === "admin" ? leaveUnreadCount : announcementUnreadCount;
   return (
     <nav className="navbar navbar-dark bg-dark px-3 d-flex justify-content-between">
       <span className="navbar-brand">EMS</span>
@@ -53,24 +50,25 @@ const Navbar = () => {
         <span className="text-light small">
           {user?.name} ({user?.role})
         </span>
+
         <button
           className="btn btn-outline-light btn-sm position-relative"
-          onClick={() => {
-            if (user?.role === "employee") {
-              navigate("/employee/announcements");
-              return;
-            }
-
-            navigate("/admin/notifications");
-          }}
+          onClick={() =>
+            navigate(
+              user?.role === "employee"
+                ? "/employee/announcements"
+                : "/admin/leaves?status=pending",
+            )
+          }
         >
-          Notifications
+          notification
           {totalUnread > 0 && (
             <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               {totalUnread}
             </span>
           )}
         </button>
+
         <button onClick={handleLogout} className="btn btn-outline-light btn-sm">
           Logout
         </button>

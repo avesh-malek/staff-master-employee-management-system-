@@ -1,6 +1,6 @@
 const asyncHandler = require("../middleware/asyncHandler");
 const leaveService = require("../services/leaveService");
-
+const Leave = require("../models/Leave");
 const createLeave = asyncHandler(async (req, res) => {
   const leave = await leaveService.createLeave({
     payload: req.body,
@@ -43,10 +43,20 @@ const deleteLeave = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: "Leave request deleted successfully" });
 });
 
+// GET /api/leaves/admin/unread-count
+const getAdminLeaveUnreadCount = asyncHandler(async (req, res) => {
+  const count = await Leave.countDocuments({
+    status: "pending",
+  });
+
+  res.status(200).json({ unreadCount: count });
+});
+
 module.exports = {
   createLeave,
   getLeaves,
   getLeaveById,
   updateLeaveStatus,
   deleteLeave,
+  getAdminLeaveUnreadCount,
 };

@@ -10,7 +10,7 @@ export const fetchLeaves = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const createLeave = createAsyncThunk(
@@ -27,7 +27,7 @@ export const createLeave = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const updateLeaveStatus = createAsyncThunk(
@@ -44,7 +44,7 @@ export const updateLeaveStatus = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const deleteLeave = createAsyncThunk(
@@ -57,6 +57,24 @@ export const deleteLeave = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
+  },
+);
+
+export const fetchAdminLeaveUnreadCount = createAsyncThunk(
+  "leave/fetchAdminLeaveUnreadCount",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+
+      const data = await apiRequest({
+        path: "/api/leaves/admin/unread-count",
+        token,
+      });
+
+      return data.unreadCount;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -65,6 +83,7 @@ const initialState = {
   loading: false,
   actionLoading: false,
   error: null,
+  unreadCount: 0,
 };
 
 const leaveSlice = createSlice({
@@ -80,6 +99,9 @@ const leaveSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchAdminLeaveUnreadCount.fulfilled, (state, action) => {
+        state.unreadCount = action.payload;
+      })
       .addCase(fetchLeaves.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -110,7 +132,9 @@ const leaveSlice = createSlice({
       })
       .addCase(updateLeaveStatus.fulfilled, (state, action) => {
         state.actionLoading = false;
-        const index = state.requests.findIndex((item) => item._id === action.payload._id);
+        const index = state.requests.findIndex(
+          (item) => item._id === action.payload._id,
+        );
         if (index >= 0) state.requests[index] = action.payload;
       })
       .addCase(updateLeaveStatus.rejected, (state, action) => {
@@ -118,7 +142,9 @@ const leaveSlice = createSlice({
         state.error = action.payload || "Failed to update leave status";
       })
       .addCase(deleteLeave.fulfilled, (state, action) => {
-        state.requests = state.requests.filter((item) => item._id !== action.payload);
+        state.requests = state.requests.filter(
+          (item) => item._id !== action.payload,
+        );
       });
   },
 });

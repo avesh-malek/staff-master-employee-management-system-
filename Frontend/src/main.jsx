@@ -17,7 +17,6 @@ import LeaveRequests from "./pages/admin/LeaveRequests";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import EditEmployee from "./pages/admin/EditEmployee";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
-import AdminNotifications from "./pages/admin/AdminNotifications";
 
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import Profile from "./pages/employee/Profile";
@@ -102,14 +101,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: "admin/notifications",
-        element: (
-          <ProtectedRoute allowedRoles={["admin", "hr"]}>
-            <AdminNotifications />
-          </ProtectedRoute>
-        ),
-      },
+      
       {
         path: "admin/employees/edit/:id",
         element: (

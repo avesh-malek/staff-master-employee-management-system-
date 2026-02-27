@@ -5,6 +5,7 @@ const {
   getLeaveById,
   updateLeaveStatus,
   deleteLeave,
+  getAdminLeaveUnreadCount
 } = require("../controllers/leaveController");
 const { protect } = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
@@ -43,6 +44,13 @@ leaveRoutes.delete(
   leaveIdParamValidation,
   handleValidationErrors,
   deleteLeave
+);
+
+leaveRoutes.get(
+  "/admin/unread-count",
+  protect,
+  authorizeRoles("admin"),
+  getAdminLeaveUnreadCount
 );
 
 module.exports = leaveRoutes;
