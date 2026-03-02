@@ -14,7 +14,7 @@ const createEmployeeValidation = [
   body("joiningDate").isISO8601(),
   body("address").optional().trim(),
   body("role").optional().isIn(roles),
-  body("isActive").optional().isBoolean(),
+  body("employmentStatus").optional().isBoolean(),
 ];
 
 const updateEmployeeValidation = [
@@ -29,7 +29,7 @@ const updateEmployeeValidation = [
   body("joiningDate").optional().isISO8601(),
   body("address").optional().trim(),
   body("role").optional().isIn(roles),
-  body("isActive").optional().isBoolean(),
+  body("employmentStatus").optional().isBoolean(),
   body().custom((value) => {
     const allowed = [
       "name",
@@ -42,7 +42,7 @@ const updateEmployeeValidation = [
       "joiningDate",
       "address",
       "role",
-      "isActive",
+      "employmentStatus",
     ];
 
     if (!value || typeof value !== "object") return false;

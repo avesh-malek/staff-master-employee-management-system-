@@ -54,6 +54,16 @@ const EmployeeProfile = () => {
             <p><strong>Employee Code:</strong> {employee.employeeCode}</p>
             <p><strong>Role:</strong> {employee.role}</p>
             <p><strong>Employment:</strong> {employee.employmentType}</p>
+            <p>
+              <strong>Employment Status:</strong>{" "}
+              <span
+                className={`badge ${
+                  employee.employmentStatus === false ? "bg-danger" : "bg-success"
+                }`}
+              >
+                {employee.employmentStatus === false ? "Inactive" : "Active"}
+              </span>
+            </p>
             <p><strong>Salary:</strong> Rs {employee.salary?.toLocaleString()}</p>
             <p><strong>Joining Date:</strong> {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : "-"}</p>
           </div></div>

@@ -74,7 +74,7 @@ const Profile = () => {
 
               <div className="row mb-3">
                 <div className="col-sm-6"><label className="text-muted">Salary</label><p className="fw-semibold">{myProfile?.salary ? `Rs ${Number(myProfile.salary).toLocaleString()}` : "-"}</p></div>
-                <div className="col-sm-6"><label className="text-muted">Status</label><span className={`badge ${myProfile?.isActive ? "bg-success" : "bg-danger"}`}>{myProfile?.isActive ? "Active" : "Inactive"}</span></div>
+                <div className="col-sm-6"><label className="text-muted">Employment Status</label><span className={`badge ${myProfile?.employmentStatus === false ? "bg-danger" : "bg-success"}`}>{myProfile?.employmentStatus === false ? "Inactive" : "Active"}</span></div>
               </div>
 
             </div>

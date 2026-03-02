@@ -31,7 +31,8 @@ const EditEmployee = () => {
       salary: employee.salary || "",
       joiningDate: employee.joiningDate ? employee.joiningDate.slice(0, 10) : "",
       role: employee.role || "employee",
-      isActive: employee.isActive,
+      employmentStatus:
+        employee.employmentStatus === undefined ? true : employee.employmentStatus,
       address: employee.address || "",
     };
   }, [employee, id]);
@@ -49,7 +50,10 @@ const EditEmployee = () => {
     const payload = {
       ...currentData,
       salary: Number(currentData.salary),
-      isActive: currentData.isActive === "false" ? false : Boolean(currentData.isActive),
+      employmentStatus:
+        currentData.employmentStatus === "false"
+          ? false
+          : Boolean(currentData.employmentStatus),
     };
 
     const result = await dispatch(updateEmployee({ id, payload }));
@@ -133,8 +137,8 @@ const EditEmployee = () => {
               </div>
 
               <div className="col-md-4">
-                <label className="form-label">Status</label>
-                <select name="isActive" className="form-select" value={String(currentData.isActive)} onChange={handleChange}>
+                <label className="form-label">Employment Status</label>
+                <select name="employmentStatus" className="form-select" value={String(currentData.employmentStatus)} onChange={handleChange}>
                   <option value="true">Active</option>
                   <option value="false">Inactive</option>
                 </select>

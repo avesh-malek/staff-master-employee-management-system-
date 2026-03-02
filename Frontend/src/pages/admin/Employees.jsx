@@ -42,7 +42,7 @@ const Employees = () => {
                   <th>Name</th>
                   <th>Department</th>
                   <th>Employment</th>
-                  <th>Status</th>
+                  <th>Employment Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -69,8 +69,12 @@ const Employees = () => {
                     <td>{emp.department}</td>
                     <td>{emp.employmentType}</td>
                     <td>
-                      <span className={`badge ${emp.isActive ? "bg-success" : "bg-danger"}`}>
-                        {emp.isActive ? "Active" : "Inactive"}
+                      <span
+                        className={`badge ${
+                          emp.employmentStatus === false ? "bg-danger" : "bg-success"
+                        }`}
+                      >
+                        {emp.employmentStatus === false ? "Inactive" : "Active"}
                       </span>
                     </td>
 

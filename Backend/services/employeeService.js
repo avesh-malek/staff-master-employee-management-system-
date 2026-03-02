@@ -23,7 +23,8 @@ const sanitizeEmployeeInput = (payload) => ({
   joiningDate: payload.joiningDate,
   address: payload.address === undefined ? undefined : payload.address.trim(),
   role: payload.role === undefined ? undefined : payload.role,
-  isActive: payload.isActive === undefined ? undefined : Boolean(payload.isActive),
+  employmentStatus:
+    payload.employmentStatus === undefined ? undefined : Boolean(payload.employmentStatus),
 });
 
 const getPublicEmployee = (employee) => ({
@@ -39,7 +40,8 @@ const getPublicEmployee = (employee) => ({
   joiningDate: employee.joiningDate,
   address: employee.address,
   profilePic: employee.profilePic,
-  isActive: employee.isActive,
+  employmentStatus:
+    employee.employmentStatus === undefined ? true : employee.employmentStatus,
   role: employee.user?.role || null,
   createdAt: employee.createdAt,
   updatedAt: employee.updatedAt,
@@ -77,7 +79,7 @@ const createEmployee = async ({ payload, actor }) => {
     email: data.email,
     password: temporaryPassword,
     role: data.role || "employee",
-    isActive: data.isActive ?? true,
+    employmentStatus: data.employmentStatus ?? true,
     passwordSetupToken: hashedSetupToken,
     passwordSetupExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
@@ -95,7 +97,7 @@ const createEmployee = async ({ payload, actor }) => {
       salary: data.salary,
       joiningDate: data.joiningDate,
       address: data.address || "",
-      isActive: data.isActive ?? true,
+      employmentStatus: data.employmentStatus ?? true,
       createdBy: actor.id,
     });
 
@@ -174,7 +176,7 @@ const updateEmployeeById = async ({ id, payload }) => {
     "salary",
     "joiningDate",
     "address",
-    "isActive",
+    "employmentStatus",
   ];
 
   const next = sanitizeEmployeeInput(payload);
@@ -213,11 +215,11 @@ const updateEmployeeById = async ({ id, payload }) => {
       user.name = employee.name;
       user.email = employee.email;
       if (next.role) user.role = next.role;
-      if (next.isActive !== undefined) {
-        if (user.isActive !== next.isActive) {
+      if (next.employmentStatus !== undefined) {
+        if (user.employmentStatus !== next.employmentStatus) {
           user.tokenVersion += 1;
         }
-        user.isActive = next.isActive;
+        user.employmentStatus = next.employmentStatus;
       }
       await user.save();
       if (employee.user && typeof employee.user === "object") {

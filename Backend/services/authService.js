@@ -54,7 +54,10 @@ const login = async ({ email, password }) => {
     throw new AppError(getLoginErrorMessage("password"), 401);
   }
 
-  if (!user.isActive || (user.employee && !user.employee.isActive)) {
+  if (
+    user.employmentStatus === false ||
+    (user.employee && user.employee.employmentStatus === false)
+  ) {
     throw new AppError(getLoginErrorMessage("inactive"), 403);
   }
 
@@ -76,7 +79,10 @@ const getCurrentUser = async (userId) => {
     throw new AppError("Unauthorized", 401);
   }
 
-  if (!user.isActive) {
+  if (
+    user.employmentStatus === false ||
+    (user.employee && user.employee.employmentStatus === false)
+  ) {
     throw new AppError("Unauthorized", 401);
   }
 
@@ -178,7 +184,7 @@ const bootstrapAdmin = async ({ name, email, password, setupKey }) => {
     email: email.toLowerCase().trim(),
     password: hashedPassword,
     role: "admin",
-    isActive: true,
+    employmentStatus: true,
   });
 
   const token = signUserToken(user);

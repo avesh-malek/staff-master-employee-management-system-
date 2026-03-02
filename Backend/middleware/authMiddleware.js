@@ -17,7 +17,12 @@ const protect = async (req, res, next) => {
       .populate("employee")
       .select("+password");
 
-    if (!user || user.deletedAt || !user.isActive) {
+    if (
+      !user ||
+      user.deletedAt ||
+      user.employmentStatus === false ||
+      (user.employee && user.employee.employmentStatus === false)
+    ) {
       return next(new AppError("Unauthorized", 401));
     }
 

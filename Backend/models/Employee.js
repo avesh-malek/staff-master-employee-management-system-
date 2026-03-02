@@ -66,7 +66,7 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    isActive: {
+    employmentStatus: {
       type: Boolean,
       default: true,
     },

@@ -32,7 +32,7 @@ const Dashboard = () => {
   };
 
   const totalEmployees = employees.length;
-  const activeEmployees = employees.filter((item) => item.isActive).length;
+  const employmentStatus = employees.filter((item) => item.employmentStatus !== false).length;
   const pendingLeaves = pendingLeaveItems.length;
   const totalPayroll = employees.reduce((sum, emp) => sum + (Number(emp.salary) || 0), 0);
 
@@ -42,7 +42,7 @@ const Dashboard = () => {
 
       <div className="row g-4 mb-4">
         <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Total Employees</h6><h3 className="fw-bold text-primary">{totalEmployees}</h3></div></div></div>
-        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Active Employees</h6><h3 className="fw-bold text-success">{activeEmployees}</h3></div></div></div>
+        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Employment Status</h6><h3 className="fw-bold text-success">{employmentStatus}</h3></div></div></div>
         <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Pending Leaves</h6><h3 className="fw-bold text-warning">{pendingLeaves}</h3></div></div></div>
         <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Payroll</h6><h3 className="fw-bold text-danger">Rs {totalPayroll.toLocaleString()}</h3></div></div></div>
       </div>

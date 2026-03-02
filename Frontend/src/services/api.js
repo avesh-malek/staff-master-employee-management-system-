@@ -26,18 +26,13 @@ export const apiRequest = async ({ path, method = "GET", token, body }) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers,
-      body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
-    });
-
-    return parseResponse(response);
-  } finally {
-    
-  }
+  return parseResponse(response);
 };
 
 export const toAssetUrl = (filePath) => {

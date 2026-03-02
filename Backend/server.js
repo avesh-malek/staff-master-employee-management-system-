@@ -7,6 +7,7 @@ const path = require("path");
 dotenv.config();
 
 const connectDB = require("./config/db");
+const backfillEmploymentStatus = require("./utils/backfillEmploymentStatus");
 
 const authRoutes = require("./routes/authRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
@@ -56,6 +57,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
+    await backfillEmploymentStatus();
     app.listen(PORT);
   } catch (error) {
     console.error(error);
