@@ -29,7 +29,6 @@ const getLoginErrorMessage = (type) => {
   if (isProduction()) return "Invalid credentials";
   if (type === "email") return "Email not found";
   if (type === "password") return "Incorrect password";
-  if (type === "inactive") return "Account is inactive";
   return "Invalid credentials";
 };
 
@@ -54,11 +53,8 @@ const login = async ({ email, password }) => {
     throw new AppError(getLoginErrorMessage("password"), 401);
   }
 
-  if (
-    user.employmentStatus === false ||
-    (user.employee && user.employee.employmentStatus === false)
-  ) {
-    throw new AppError(getLoginErrorMessage("inactive"), 403);
+  if (user.employmentStatus !== "active") {
+    throw new AppError("Your account is not active. Please contact admin.", 403);
   }
 
   user.lastLoginAt = new Date();
@@ -79,10 +75,7 @@ const getCurrentUser = async (userId) => {
     throw new AppError("Unauthorized", 401);
   }
 
-  if (
-    user.employmentStatus === false ||
-    (user.employee && user.employee.employmentStatus === false)
-  ) {
+  if (user.employmentStatus !== "active") {
     throw new AppError("Unauthorized", 401);
   }
 
@@ -184,7 +177,7 @@ const bootstrapAdmin = async ({ name, email, password, setupKey }) => {
     email: email.toLowerCase().trim(),
     password: hashedPassword,
     role: "admin",
-    employmentStatus: true,
+    employmentStatus: "active",
   });
 
   const token = signUserToken(user);

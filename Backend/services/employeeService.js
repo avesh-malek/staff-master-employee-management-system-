@@ -11,6 +11,7 @@ const { sendPasswordSetupEmail } = require("./notificationService");
 const { deleteFileIfExists } = require("../utils/file");
 
 const toEmployeeCode = (seq) => `EMP${String(seq).padStart(3, "0")}`;
+const EMPLOYMENT_STATUS_VALUES = ["active", "inactive", "terminated", "on_leave"];
 
 const sanitizeEmployeeInput = (payload) => ({
   name: payload.name?.trim(),
@@ -23,8 +24,6 @@ const sanitizeEmployeeInput = (payload) => ({
   joiningDate: payload.joiningDate,
   address: payload.address === undefined ? undefined : payload.address.trim(),
   role: payload.role === undefined ? undefined : payload.role,
-  employmentStatus:
-    payload.employmentStatus === undefined ? undefined : Boolean(payload.employmentStatus),
 });
 
 const getPublicEmployee = (employee) => ({
@@ -40,8 +39,12 @@ const getPublicEmployee = (employee) => ({
   joiningDate: employee.joiningDate,
   address: employee.address,
   profilePic: employee.profilePic,
-  employmentStatus:
-    employee.employmentStatus === undefined ? true : employee.employmentStatus,
+  user: employee.user
+    ? {
+        role: employee.user.role || null,
+        employmentStatus: employee.user.employmentStatus || "active",
+      }
+    : null,
   role: employee.user?.role || null,
   createdAt: employee.createdAt,
   updatedAt: employee.updatedAt,
@@ -55,6 +58,11 @@ const assertObjectId = (id) => {
 
 const createEmployee = async ({ payload, actor }) => {
   const data = sanitizeEmployeeInput(payload);
+  const employmentStatus = payload.employmentStatus || "active";
+
+  if (!EMPLOYMENT_STATUS_VALUES.includes(employmentStatus)) {
+    throw new AppError("Invalid or missing input data", 400);
+  }
 
   const existingEmployee = await Employee.findOne({ email: data.email });
   if (existingEmployee) {
@@ -79,7 +87,7 @@ const createEmployee = async ({ payload, actor }) => {
     email: data.email,
     password: temporaryPassword,
     role: data.role || "employee",
-    employmentStatus: data.employmentStatus ?? true,
+    employmentStatus,
     passwordSetupToken: hashedSetupToken,
     passwordSetupExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
@@ -97,7 +105,6 @@ const createEmployee = async ({ payload, actor }) => {
       salary: data.salary,
       joiningDate: data.joiningDate,
       address: data.address || "",
-      employmentStatus: data.employmentStatus ?? true,
       createdBy: actor.id,
     });
 
@@ -119,15 +126,39 @@ const createEmployee = async ({ payload, actor }) => {
 
 const listEmployees = async () => {
   const employees = await Employee.find()
-    .populate("user", "role")
-    .sort({ createdAt: -1 });
+    .populate("user", "role employmentStatus");
+
+  const priority = {
+    active: 1,
+    on_leave: 2,
+    inactive: 3,
+    terminated: 4,
+  };
+
+  employees.sort((a, b) => {
+    const statusA = a.user?.employmentStatus || "inactive";
+    const statusB = b.user?.employmentStatus || "inactive";
+
+    const orderDiff = priority[statusA] - priority[statusB];
+
+    // If same status, sort by newest first
+    if (orderDiff === 0) {
+      return b.createdAt - a.createdAt;
+    }
+
+    return orderDiff;
+  });
+
   return employees.map(getPublicEmployee);
 };
 
 const getEmployeeById = async (id, requester) => {
   assertObjectId(id);
 
-  const employee = await Employee.findById(id).populate("user", "role");
+  const employee = await Employee.findById(id).populate(
+    "user",
+    "role employmentStatus"
+  );
   if (!employee) {
     throw new AppError("Employee not found", 404);
   }
@@ -147,10 +178,7 @@ const getMyEmployee = async (requester) => {
     throw new AppError("Employee profile not found", 404);
   }
 
-  const employee = await Employee.findById(requester.employeeId).populate(
-    "user",
-    "role"
-  );
+  const employee = await Employee.findById(requester.employeeId).populate("user", "role employmentStatus");
   if (!employee) {
     throw new AppError("Employee profile not found", 404);
   }
@@ -161,7 +189,10 @@ const getMyEmployee = async (requester) => {
 const updateEmployeeById = async ({ id, payload }) => {
   assertObjectId(id);
 
-  const employee = await Employee.findById(id).populate("user", "role");
+  const employee = await Employee.findById(id).populate(
+    "user",
+    "role employmentStatus"
+  );
   if (!employee) {
     throw new AppError("Employee not found", 404);
   }
@@ -176,10 +207,17 @@ const updateEmployeeById = async ({ id, payload }) => {
     "salary",
     "joiningDate",
     "address",
-    "employmentStatus",
   ];
 
   const next = sanitizeEmployeeInput(payload);
+  const employmentStatus = payload.employmentStatus;
+
+  if (
+    employmentStatus !== undefined &&
+    !EMPLOYMENT_STATUS_VALUES.includes(employmentStatus)
+  ) {
+    throw new AppError("Invalid or missing input data", 400);
+  }
 
   if (next.email && next.email !== employee.email) {
     const duplicateEmployee = await Employee.findOne({
@@ -215,15 +253,16 @@ const updateEmployeeById = async ({ id, payload }) => {
       user.name = employee.name;
       user.email = employee.email;
       if (next.role) user.role = next.role;
-      if (next.employmentStatus !== undefined) {
-        if (user.employmentStatus !== next.employmentStatus) {
+      if (employmentStatus !== undefined) {
+        if (user.employmentStatus !== employmentStatus) {
           user.tokenVersion += 1;
         }
-        user.employmentStatus = next.employmentStatus;
+        user.employmentStatus = employmentStatus;
       }
       await user.save();
       if (employee.user && typeof employee.user === "object") {
         employee.user.role = user.role;
+        employee.user.employmentStatus = user.employmentStatus;
       }
     }
   }
@@ -258,7 +297,7 @@ const updateEmployeeProfilePicture = async ({ employeeId, filePath, requester, f
 
   const employee = await Employee.findById(targetEmployeeId).populate(
     "user",
-    "role"
+    "role employmentStatus"
   );
   if (!employee) {
     throw new AppError("Employee not found", 404);

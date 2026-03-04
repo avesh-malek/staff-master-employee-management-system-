@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchEmployees } from "../../features/employees/employeeSlice";
-import { fetchLeaves, updateLeaveStatus } from "../../features/leave/leaveSlice";
+import {
+  fetchLeaves,
+  updateLeaveStatus,
+} from "../../features/leave/leaveSlice";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,7 +19,9 @@ const Dashboard = () => {
     dispatch(fetchLeaves());
   }, [dispatch]);
 
-  const pendingLeaveItems = leaves.filter((leave) => leave.status === "pending");
+  const pendingLeaveItems = leaves.filter(
+    (leave) => leave.status === "pending"
+  );
 
   const handleApproveAll = async () => {
     if (!pendingLeaveItems.length) return;
@@ -24,7 +29,12 @@ const Dashboard = () => {
 
     await Promise.all(
       pendingLeaveItems.map((leave) =>
-        dispatch(updateLeaveStatus({ id: leave._id, status: "approved" }))
+        dispatch(
+          updateLeaveStatus({
+            id: leave._id,
+            status: "approved",
+          })
+        )
       )
     );
 
@@ -32,38 +42,130 @@ const Dashboard = () => {
   };
 
   const totalEmployees = employees.length;
-  const employmentStatus = employees.filter((item) => item.employmentStatus !== false).length;
+
+  const activeEmployees = employees.filter(
+    (item) => item.user?.employmentStatus === "active"
+  ).length;
+
   const pendingLeaves = pendingLeaveItems.length;
-  const totalPayroll = employees.reduce((sum, emp) => sum + (Number(emp.salary) || 0), 0);
+
+  const totalPayroll = employees.reduce(
+    (sum, emp) => sum + (Number(emp.salary) || 0),
+    0
+  );
 
   return (
-    <div>
-      <h3 className="mb-4 fw-bold">Admin Dashboard</h3>
+    <div className="container-fluid">
 
-      <div className="row g-4 mb-4">
-        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Total Employees</h6><h3 className="fw-bold text-primary">{totalEmployees}</h3></div></div></div>
-        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Employment Status</h6><h3 className="fw-bold text-success">{employmentStatus}</h3></div></div></div>
-        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Pending Leaves</h6><h3 className="fw-bold text-warning">{pendingLeaves}</h3></div></div></div>
-        <div className="col-md-3"><div className="card shadow-sm text-center"><div className="card-body"><h6 className="text-muted">Payroll</h6><h3 className="fw-bold text-danger">Rs {totalPayroll.toLocaleString()}</h3></div></div></div>
+      {/* HEADER */}
+      <div className="mb-4">
+        <h4 className="fw-bold mb-1">Admin Dashboard</h4>
+        <p className="text-muted mb-0" style={{ fontSize: "14px" }}>
+          Overview of employees, payroll and leave activity
+        </p>
       </div>
 
+      {/* STATS CARDS */}
+      <div className="row g-4 mb-4">
+        {[
+          {
+            title: "Total Employees",
+            value: totalEmployees,
+            color: "primary",
+          },
+          {
+            title: "Active Employees",
+            value: activeEmployees,
+            color: "success",
+          },
+          {
+            title: "Pending Leaves",
+            value: pendingLeaves,
+            color: "warning",
+          },
+          {
+            title: "Payroll",
+            value: `Rs ${totalPayroll.toLocaleString()}`,
+            color: "danger",
+          },
+        ].map((card, index) => (
+          <div className="col-md-3" key={index}>
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h6 className="text-muted mb-2" style={{ fontSize: "13px" }}>
+                  {card.title}
+                </h6>
+                <h3 className={`fw-bold text-${card.color} mb-0`}>
+                  {card.value}
+                </h3>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ACTION CARDS */}
       <div className="row g-4">
         <div className="col-md-6">
-          <div className="card shadow-sm"><div className="card-body text-center">
-            <h5 className="card-title mb-3">Manage Employees</h5>
-            <button className="btn btn-outline-primary me-2" onClick={() => navigate("/admin/add-employee")}>Add Employee</button>
-            <button className="btn btn-outline-secondary" onClick={() => navigate("/admin/employees")}>View Employees</button>
-          </div></div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <h5 className="fw-semibold mb-3">
+                Manage Employees
+              </h5>
+
+              <div className="d-flex gap-2 flex-wrap">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() =>
+                    navigate("/admin/add-employee")
+                  }
+                >
+                  Add Employee
+                </button>
+
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() =>
+                    navigate("/admin/employees")
+                  }
+                >
+                  View Employees
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="col-md-6">
-          <div className="card shadow-sm"><div className="card-body text-center">
-            <h5 className="card-title mb-3">Manage Leaves</h5>
-            <button className="btn btn-outline-warning me-2" onClick={() => navigate("/admin/leaves")}>View Leave Requests</button>
-            <button className="btn btn-outline-success" disabled={pendingLeaves === 0} onClick={handleApproveAll}>Approve All</button>
-          </div></div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <h5 className="fw-semibold mb-3">
+                Manage Leaves
+              </h5>
+
+              <div className="d-flex gap-2 flex-wrap">
+                <button
+                  className="btn btn-warning btn-sm"
+                  onClick={() =>
+                    navigate("/admin/leaves")
+                  }
+                >
+                  View Leave Requests
+                </button>
+
+                <button
+                  className="btn btn-success btn-sm"
+                  disabled={pendingLeaves === 0}
+                  onClick={handleApproveAll}
+                >
+                  Approve All
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

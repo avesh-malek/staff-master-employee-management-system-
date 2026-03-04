@@ -6,11 +6,19 @@ import {
 } from "../../features/employees/employeeSlice";
 import { toAssetUrl } from "../../services/api";
 
+const getStatusMeta = (status) => {
+  if (status === "inactive") return { label: "Inactive", badge: "bg-warning text-dark" };
+  if (status === "terminated") return { label: "Terminated", badge: "bg-danger" };
+  if (status === "on_leave") return { label: "On Leave", badge: "bg-info text-dark" };
+  return { label: "Active", badge: "bg-success" };
+};
+
 const Profile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { myProfile, actionLoading, error } = useSelector((state) => state.employees);
   const [file, setFile] = useState(null);
+  const status = getStatusMeta(myProfile?.user?.employmentStatus);
 
   useEffect(() => {
     dispatch(fetchMyEmployee());
@@ -74,7 +82,7 @@ const Profile = () => {
 
               <div className="row mb-3">
                 <div className="col-sm-6"><label className="text-muted">Salary</label><p className="fw-semibold">{myProfile?.salary ? `Rs ${Number(myProfile.salary).toLocaleString()}` : "-"}</p></div>
-                <div className="col-sm-6"><label className="text-muted">Employment Status</label><span className={`badge ${myProfile?.employmentStatus === false ? "bg-danger" : "bg-success"}`}>{myProfile?.employmentStatus === false ? "Inactive" : "Active"}</span></div>
+                <div className="col-sm-6"><label className="text-muted">Employment Status</label><span className={`badge ${status.badge}`}>{status.label}</span></div>
               </div>
 
             </div>

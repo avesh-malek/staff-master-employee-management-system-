@@ -66,10 +66,6 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    employmentStatus: {
-      type: Boolean,
-      default: true,
-    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

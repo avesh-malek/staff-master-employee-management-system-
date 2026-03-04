@@ -14,7 +14,7 @@ const initialForm = {
   salary: "",
   joiningDate: "",
   role: "employee",
-  employmentStatus: true,
+  employmentStatus: "active",
 };
 
 const AddEmployee = () => {
@@ -34,8 +34,6 @@ const AddEmployee = () => {
     const payload = {
       ...form,
       salary: Number(form.salary),
-      employmentStatus:
-        form.employmentStatus === "false" ? false : Boolean(form.employmentStatus),
     };
 
     const result = await dispatch(createEmployee(payload));
@@ -172,8 +170,10 @@ const AddEmployee = () => {
                   value={String(form.employmentStatus)}
                   onChange={handleChange}
                 >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="terminated">Terminated</option>
+                  <option value="on_leave">On Leave</option>
                 </select>
               </div>
 

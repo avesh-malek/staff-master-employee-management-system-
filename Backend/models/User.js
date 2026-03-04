@@ -32,8 +32,9 @@ const userSchema = new mongoose.Schema(
       default: "employee",
     },
     employmentStatus: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["active", "inactive", "terminated", "on_leave"],
+      default: "active",
     },
     deletedAt: {
       type: Date,

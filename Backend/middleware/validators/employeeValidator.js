@@ -2,6 +2,7 @@ const { body, param } = require("express-validator");
 
 const roles = ["admin", "hr", "employee"];
 const employmentTypes = ["Full-time", "Intern", "Contract"];
+const employmentStatuses = ["active", "inactive", "terminated", "on_leave"];
 
 const createEmployeeValidation = [
   body("name").trim().notEmpty(),
@@ -14,7 +15,7 @@ const createEmployeeValidation = [
   body("joiningDate").isISO8601(),
   body("address").optional().trim(),
   body("role").optional().isIn(roles),
-  body("employmentStatus").optional().isBoolean(),
+  body("employmentStatus").optional().isIn(employmentStatuses),
 ];
 
 const updateEmployeeValidation = [
@@ -29,7 +30,7 @@ const updateEmployeeValidation = [
   body("joiningDate").optional().isISO8601(),
   body("address").optional().trim(),
   body("role").optional().isIn(roles),
-  body("employmentStatus").optional().isBoolean(),
+  body("employmentStatus").optional().isIn(employmentStatuses),
   body().custom((value) => {
     const allowed = [
       "name",

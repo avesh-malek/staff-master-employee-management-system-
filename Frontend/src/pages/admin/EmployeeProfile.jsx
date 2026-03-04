@@ -4,6 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployeeById } from "../../features/employees/employeeSlice";
 import { toAssetUrl } from "../../services/api";
 
+const getStatusMeta = (status) => {
+  if (status === "inactive") return { label: "Inactive", badge: "bg-warning text-dark" };
+  if (status === "terminated") return { label: "Terminated", badge: "bg-danger" };
+  if (status === "on_leave") return { label: "On Leave", badge: "bg-info text-dark" };
+  return { label: "Active", badge: "bg-success" };
+};
+
 const EmployeeProfile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -18,6 +25,7 @@ const EmployeeProfile = () => {
   if (loading && (!employee || employee._id !== id)) return <p>Loading employee...</p>;
   if (error && (!employee || employee._id !== id)) return <p>{error}</p>;
   if (!employee || employee._id !== id) return <p>Employee not found</p>;
+  const status = getStatusMeta(employee.user?.employmentStatus);
 
   return (
     <div>
@@ -56,13 +64,7 @@ const EmployeeProfile = () => {
             <p><strong>Employment:</strong> {employee.employmentType}</p>
             <p>
               <strong>Employment Status:</strong>{" "}
-              <span
-                className={`badge ${
-                  employee.employmentStatus === false ? "bg-danger" : "bg-success"
-                }`}
-              >
-                {employee.employmentStatus === false ? "Inactive" : "Active"}
-              </span>
+              <span className={`badge ${status.badge}`}>{status.label}</span>
             </p>
             <p><strong>Salary:</strong> Rs {employee.salary?.toLocaleString()}</p>
             <p><strong>Joining Date:</strong> {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : "-"}</p>

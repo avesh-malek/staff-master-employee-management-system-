@@ -30,7 +30,7 @@ const createAnnouncement = async ({ payload, requester }) => {
 
   const users = await User.find({
     role: "employee",
-    employmentStatus: { $ne: false },
+    employmentStatus: "active",
     deletedAt: null,
   }).select("email");
 
