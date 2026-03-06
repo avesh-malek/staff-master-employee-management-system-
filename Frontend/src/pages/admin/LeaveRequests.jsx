@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import {
   fetchLeaves,
   updateLeaveStatus,
@@ -14,6 +15,9 @@ const badgeClass = (status) => {
 
 const LeaveRequests = () => {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const {
     requests: leaves,
     loading,
@@ -23,12 +27,25 @@ const LeaveRequests = () => {
 
   useEffect(() => {
     dispatch(fetchLeaves());
-  }, [dispatch]);
+
+    const statusFromUrl = searchParams.get("status");
+
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+    } else {
+      setStatusFilter("all");
+    }
+  }, [dispatch, searchParams]);
 
   const handleAction = async (id, status) => {
     await dispatch(updateLeaveStatus({ id, status }));
     dispatch(fetchAdminLeaveUnreadCount());
   };
+
+  const filteredLeaves =
+    statusFilter === "all"
+      ? leaves
+      : leaves.filter((leave) => leave.status === statusFilter);
 
   return (
     <div>
@@ -55,7 +72,7 @@ const LeaveRequests = () => {
               </thead>
 
               <tbody>
-                {leaves.map((leave) => (
+                {filteredLeaves.map((leave) => (
                   <tr key={leave._id}>
                     <td>{leave.employee?.name}</td>
                     <td>{leave.leaveType}</td>
@@ -72,14 +89,18 @@ const LeaveRequests = () => {
                         <>
                           <button
                             className="btn btn-sm btn-success me-1"
-                            onClick={() => handleAction(leave._id, "approved")}
+                            onClick={() =>
+                              handleAction(leave._id, "approved")
+                            }
                             disabled={actionLoading}
                           >
                             Approve
                           </button>
                           <button
                             className="btn btn-sm btn-danger"
-                            onClick={() => handleAction(leave._id, "rejected")}
+                            onClick={() =>
+                              handleAction(leave._id, "rejected")
+                            }
                             disabled={actionLoading}
                           >
                             Reject
@@ -92,7 +113,7 @@ const LeaveRequests = () => {
                   </tr>
                 ))}
 
-                {leaves.length === 0 && (
+                {filteredLeaves.length === 0 && (
                   <tr>
                     <td colSpan="7" className="text-muted">
                       No leave requests found

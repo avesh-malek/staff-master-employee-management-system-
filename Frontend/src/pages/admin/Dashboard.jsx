@@ -42,13 +42,10 @@ const Dashboard = () => {
   };
 
   const totalEmployees = employees.length;
-
   const activeEmployees = employees.filter(
     (item) => item.user?.employmentStatus === "active"
   ).length;
-
   const pendingLeaves = pendingLeaveItems.length;
-
   const totalPayroll = employees.reduce(
     (sum, emp) => sum + (Number(emp.salary) || 0),
     0
@@ -57,7 +54,6 @@ const Dashboard = () => {
   return (
     <div className="container-fluid">
 
-      {/* HEADER */}
       <div className="mb-4">
         <h4 className="fw-bold mb-1">Admin Dashboard</h4>
         <p className="text-muted mb-0" style={{ fontSize: "14px" }}>
@@ -65,32 +61,39 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* STATS CARDS */}
       <div className="row g-4 mb-4">
         {[
           {
             title: "Total Employees",
             value: totalEmployees,
             color: "primary",
+            route: "/admin/employees",
           },
           {
             title: "Active Employees",
             value: activeEmployees,
             color: "success",
+            route: "/admin/employees?status=active",
           },
           {
             title: "Pending Leaves",
             value: pendingLeaves,
             color: "warning",
+            route: "/admin/leaves?status=pending",
           },
           {
             title: "Payroll",
             value: `Rs ${totalPayroll.toLocaleString()}`,
             color: "danger",
+            route: null,
           },
         ].map((card, index) => (
           <div className="col-md-3" key={index}>
-            <div className="card border-0 shadow-sm h-100">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{ cursor: card.route ? "pointer" : "default" }}
+              onClick={() => card.route && navigate(card.route)}
+            >
               <div className="card-body">
                 <h6 className="text-muted mb-2" style={{ fontSize: "13px" }}>
                   {card.title}
@@ -104,7 +107,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* ACTION CARDS */}
       <div className="row g-4">
         <div className="col-md-6">
           <div className="card border-0 shadow-sm h-100">

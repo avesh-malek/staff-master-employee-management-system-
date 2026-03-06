@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   deleteEmployee,
   fetchEmployees,
@@ -13,6 +13,7 @@ const DEFAULT_AVATAR =
 const Employees = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -25,7 +26,14 @@ const Employees = () => {
 
   useEffect(() => {
     dispatch(fetchEmployees());
-  }, [dispatch]);
+
+    const statusFromUrl = searchParams.get("status");
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+    } else {
+      setStatusFilter("all");
+    }
+  }, [dispatch, searchParams]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this employee?"))
@@ -44,7 +52,6 @@ const Employees = () => {
     <div>
       <h6 className="mb-2 fw-semibold text-dark">Employee List</h6>
 
-      {/* FILTER BUTTONS */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["all", "active", "inactive", "on_leave", "terminated"].map(
           (status) => (
