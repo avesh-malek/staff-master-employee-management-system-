@@ -3,10 +3,19 @@ import { apiRequest } from "../../services/api";
 
 export const fetchLeaves = createAsyncThunk(
   "leave/fetchLeaves",
-  async (_, { getState, rejectWithValue }) => {
+  async (filters = {}, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.token;
-      return await apiRequest({ path: "/api/leaves", token });
+      const params = new URLSearchParams();
+
+      if (filters.status) params.set("status", filters.status);
+      if (filters.month) params.set("month", filters.month);
+
+      const query = params.toString();
+      return await apiRequest({
+        path: query ? `/api/leaves?${query}` : "/api/leaves",
+        token,
+      });
     } catch (error) {
       return rejectWithValue(error.message);
     }

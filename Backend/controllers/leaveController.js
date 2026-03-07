@@ -11,7 +11,13 @@ const createLeave = asyncHandler(async (req, res) => {
 });
 
 const getLeaves = asyncHandler(async (req, res) => {
-  const leaves = await leaveService.listLeaves({ requester: req.user });
+  const leaves = await leaveService.listLeaves({
+    requester: req.user,
+    filters: {
+      status: req.query.status,
+      month: req.query.month,
+    },
+  });
   return res.status(200).json(leaves);
 });
 

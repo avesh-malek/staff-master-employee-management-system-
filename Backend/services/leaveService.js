@@ -67,10 +67,23 @@ const createLeave = async ({ payload, requester }) => {
   return normalizeLeave(populated);
 };
 
-const listLeaves = async ({ requester }) => {
+const listLeaves = async ({ requester, filters = {} }) => {
   const query = ["admin", "hr"].includes(requester.role)
     ? {}
     : { employee: requester.employeeId };
+
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  if (filters.month) {
+    const [year, month] = filters.month.split("-").map(Number);
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    query.fromDate = { $lte: end };
+    query.toDate = { $gte: start };
+  }
 
   const leaves = await Leave.find(query)
     .populate("employee", "employeeCode name")

@@ -13,11 +13,27 @@ const badgeClass = (status) => {
   return "bg-warning text-dark";
 };
 
+const getDays = (from, to) => {
+  const start = new Date(from);
+  const end = new Date(to);
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+};
+
+const formatDays = (days) => {
+  if (days >= 14) return `${days} \uD83D\uDD34`;
+  if (days >= 7) return `${days} \uD83D\uDFE0`;
+  return `${days}`;
+};
+
 const LeaveRequests = () => {
   const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState("all");
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") || "",
+  );
+  const [monthFilter, setMonthFilter] = useState(
+    searchParams.get("month") || "",
+  );
   const {
     requests: leaves,
     loading,
@@ -26,102 +42,161 @@ const LeaveRequests = () => {
   } = useSelector((state) => state.leave);
 
   useEffect(() => {
-    dispatch(fetchLeaves());
-
-    const statusFromUrl = searchParams.get("status");
-
-    if (statusFromUrl) {
-      setStatusFilter(statusFromUrl);
-    } else {
-      setStatusFilter("all");
-    }
-  }, [dispatch, searchParams]);
+    const nextParams = {};
+    if (statusFilter) nextParams.status = statusFilter;
+    if (monthFilter) nextParams.month = monthFilter;
+    setSearchParams(nextParams);
+    dispatch(fetchLeaves(nextParams));
+  }, [dispatch, monthFilter, setSearchParams, statusFilter]);
 
   const handleAction = async (id, status) => {
     await dispatch(updateLeaveStatus({ id, status }));
+    dispatch(fetchLeaves({ status: statusFilter, month: monthFilter }));
     dispatch(fetchAdminLeaveUnreadCount());
   };
 
-  const filteredLeaves =
-    statusFilter === "all"
-      ? leaves
-      : leaves.filter((leave) => leave.status === statusFilter);
-
   return (
     <div>
-      <h3 className="mb-4 fw-bold">Leave Requests</h3>
+      <h6 className="mb-3 fw-semibold text-dark">Leave Requests</h6>
 
       {error && <div className="alert alert-danger py-2">{error}</div>}
 
-      <div className="card shadow-sm">
+      <div className="card shadow-sm border-0">
         <div className="card-body">
+          <div className="row g-2 mb-3">
+            <div className="col-md-3">
+              <label className="form-label small mb-1">Month</label>
+              <input
+                type="month"
+                className="form-control form-control-sm"
+                value={monthFilter}
+                onChange={(event) => setMonthFilter(event.target.value)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label small mb-1">Status</label>
+              <select
+                className="form-select form-select-sm"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+
           {loading ? (
-            <p className="mb-0">Loading leave requests...</p>
+            <p className="mb-0 small">Loading leave requests...</p>
           ) : (
-            <table className="table table-bordered table-hover align-middle text-center">
-              <thead className="table-light">
-                <tr>
-                  <th>Employee</th>
-                  <th>Type</th>
-                  <th>From</th>
-                  <th>To</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredLeaves.map((leave) => (
-                  <tr key={leave._id}>
-                    <td>{leave.employee?.name}</td>
-                    <td>{leave.leaveType}</td>
-                    <td>{new Date(leave.fromDate).toLocaleDateString()}</td>
-                    <td>{new Date(leave.toDate).toLocaleDateString()}</td>
-                    <td>{leave.reason}</td>
-                    <td>
-                      <span className={`badge ${badgeClass(leave.status)}`}>
-                        {leave.status}
-                      </span>
-                    </td>
-                    <td>
-                      {leave.status === "pending" ? (
-                        <>
-                          <button
-                            className="btn btn-sm btn-success me-1"
-                            onClick={() =>
-                              handleAction(leave._id, "approved")
-                            }
-                            disabled={actionLoading}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() =>
-                              handleAction(leave._id, "rejected")
-                            }
-                            disabled={actionLoading}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : (
-                        <span>-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-                {filteredLeaves.length === 0 && (
+            <div className="table-responsive">
+              <table className="table table-bordered table-hover table-sm align-middle text-center">
+                <thead className="table-light small">
                   <tr>
-                    <td colSpan="7" className="text-muted">
-                      No leave requests found
-                    </td>
+                    <th>Employee</th>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Days</th>
+                    <th className="text-start" style={{ width: "200px" }}>
+                      Reason
+                    </th>
+                    <th>Status</th>
+                    <th style={{ width: "140px" }}>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody className="small">
+                  {leaves.map((leave) => {
+                    const days = getDays(leave.fromDate, leave.toDate);
+                    return (
+                      <tr
+                        key={leave._id}
+                        className={
+                          leave.status === "pending" ? "table-warning" : ""
+                        }
+                      >
+                        <td className="fw-semibold">{leave.employee?.name}</td>
+
+                        <td>{leave.leaveType}</td>
+
+                        <td>{new Date(leave.fromDate).toLocaleDateString()}</td>
+
+                        <td>{new Date(leave.toDate).toLocaleDateString()}</td>
+
+                        <td>{formatDays(days)}</td>
+
+                        <td
+                          className="text-start"
+                          style={{ maxWidth: "200px", whiteSpace: "normal" }}
+                        >
+                          {leave.reason}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`badge ${badgeClass(
+                              leave.status,
+                            )} px-2 py-1`}
+                            style={{ textTransform: "capitalize" }}
+                          >
+                            {leave.status}
+                          </span>
+                        </td>
+
+                        <td>
+                          {leave.status === "pending" ? (
+                            <div className="d-flex justify-content-center gap-1">
+                              <button
+                                className="btn btn-sm text-white px-2 py-0"
+                                style={{
+                                  fontSize: "12px",
+                                  backgroundColor: "#198754",
+                                  border: "none",
+                                }}
+                                onClick={() =>
+                                  handleAction(leave._id, "approved")
+                                }
+                                disabled={actionLoading}
+                              >
+                                Approve
+                              </button>
+
+                              <button
+                                className="btn btn-sm text-white px-2 py-0"
+                                style={{
+                                  fontSize: "12px",
+                                  backgroundColor: "#dc3545",
+                                  border: "none",
+                                }}
+                                onClick={() =>
+                                  handleAction(leave._id, "rejected")
+                                }
+                                disabled={actionLoading}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {leaves.length === 0 && (
+                    <tr>
+                      <td colSpan="8" className="text-muted py-3">
+                        No leave requests found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

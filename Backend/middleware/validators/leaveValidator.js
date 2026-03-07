@@ -1,4 +1,4 @@
-const { body, param } = require("express-validator");
+const { body, param, query } = require("express-validator");
 
 const leaveTypes = ["casual", "sick", "paid", "unpaid"];
 const leaveStatuses = ["pending", "approved", "rejected"];
@@ -12,6 +12,11 @@ const createLeaveValidation = [
 
 const leaveIdParamValidation = [param("id").isMongoId()];
 
+const leaveListQueryValidation = [
+  query("status").optional().isIn(leaveStatuses),
+  query("month").optional().matches(/^\d{4}-\d{2}$/),
+];
+
 const updateLeaveStatusValidation = [
   param("id").isMongoId(),
   body("status").isIn(leaveStatuses),
@@ -20,5 +25,6 @@ const updateLeaveStatusValidation = [
 module.exports = {
   createLeaveValidation,
   leaveIdParamValidation,
+  leaveListQueryValidation,
   updateLeaveStatusValidation,
 };

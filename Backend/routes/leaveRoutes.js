@@ -14,12 +14,19 @@ const {
   createLeaveValidation,
   updateLeaveStatusValidation,
   leaveIdParamValidation,
+  leaveListQueryValidation,
 } = require("../middleware/validators/leaveValidator");
 
 const leaveRoutes = express.Router();
 
 leaveRoutes.post("/", protect, createLeaveValidation, handleValidationErrors, createLeave);
-leaveRoutes.get("/", protect, getLeaves);
+leaveRoutes.get(
+  "/",
+  protect,
+  leaveListQueryValidation,
+  handleValidationErrors,
+  getLeaves
+);
 
 leaveRoutes.get(
   "/:id",
