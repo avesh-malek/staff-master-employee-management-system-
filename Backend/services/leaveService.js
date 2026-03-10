@@ -3,6 +3,7 @@ const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const AppError = require("../utils/appError");
+const { sendLeaveStatusEmail } = require("../services/notificationService");
 
 const assertObjectId = (id) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -86,7 +87,7 @@ const listLeaves = async ({ requester, filters = {} }) => {
   }
 
   const leaves = await Leave.find(query)
-    .populate("employee", "employeeCode name")
+    .populate("employee", "employeeCode name email")
     .sort({ createdAt: -1 });
 
   return leaves.map(normalizeLeave);
@@ -125,7 +126,7 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
 
   const leave = await Leave.findById(id).populate(
     "employee",
-    "employeeCode name",
+    "employeeCode name email",
   );
 
   if (!leave) {
@@ -136,6 +137,21 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
   leave.reviewedBy = requester.id;
   leave.reviewedAt = new Date();
   await leave.save();
+
+  // 🔹 send email notification
+ // ✅ send email safely
+  try {
+    if (leave.employee?.email) {
+      await sendLeaveStatusEmail({
+        email: leave.employee.email,
+        status,
+        fromDate: leave.fromDate.toISOString().split("T")[0],
+        toDate: leave.toDate.toISOString().split("T")[0],
+      });
+    }
+  } catch (error) {
+    console.error("Email failed:", error);
+  }
 
   return normalizeLeave(leave);
 };

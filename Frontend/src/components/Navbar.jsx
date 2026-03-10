@@ -18,8 +18,7 @@ const Navbar = () => {
   const { unreadCount: announcementUnreadCount } = useSelector(
     (state) => state.announcements,
   );
-const { unreadCount: leaveUnreadCount } = useSelector((state) => state.leave);
-
+  const { unreadCount: leaveUnreadCount } = useSelector((state) => state.leave);
 
   useEffect(() => {
     if (user?.role === "employee") {
@@ -27,7 +26,16 @@ const { unreadCount: leaveUnreadCount } = useSelector((state) => state.leave);
     }
 
     if (user?.role === "admin") {
+      // first load
       dispatch(fetchAdminLeaveUnreadCount());
+
+      // refresh every 30 seconds
+      const interval = setInterval(() => {
+        dispatch(fetchAdminLeaveUnreadCount());
+      }, 30000);
+
+      // cleanup when component unmounts
+      return () => clearInterval(interval);
     }
   }, [dispatch, user]);
 
@@ -43,48 +51,43 @@ const { unreadCount: leaveUnreadCount } = useSelector((state) => state.leave);
   const totalUnread =
     user?.role === "admin" ? leaveUnreadCount : announcementUnreadCount;
   return (
-<nav
-  className="navbar px-4 d-flex justify-content-between"
-  style={{
-    backgroundColor: "#1e293b",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  }}
->
-  <span className="navbar-brand text-light fw-semibold">
-    EMS
-  </span>
-
-  <div className="d-flex align-items-center gap-3">
-    <span className="text-light small opacity-75">
-      {user?.name} ({user?.role})
-    </span>
-
-    <button
-      className="btn btn-outline-light btn-sm position-relative"
-      onClick={() =>
-        navigate(
-          user?.role === "employee"
-            ? "/employee/announcements"
-            : "/admin/leaves?status=pending"
-        )
-      }
+    <nav
+      className="navbar px-4 d-flex justify-content-between"
+      style={{
+        backgroundColor: "#1e293b",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
     >
-      Notification
-      {totalUnread > 0 && (
-        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          {totalUnread}
+      <span className="navbar-brand text-light fw-semibold">EMS</span>
+
+      <div className="d-flex align-items-center gap-3">
+        <span className="text-light small opacity-75">
+          {user?.name} ({user?.role})
         </span>
-      )}
-    </button>
 
-    <button
-      onClick={handleLogout}
-      className="btn btn-outline-light btn-sm"
-    >
-      Logout
-    </button>
-  </div>
-</nav>
+        <button
+          className="btn btn-outline-light btn-sm position-relative"
+          onClick={() =>
+            navigate(
+              user?.role === "employee"
+                ? "/employee/announcements"
+                : "/admin/leaves",
+            )
+          }
+        >
+          Notification
+          {totalUnread > 0 && (
+            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {totalUnread}
+            </span>
+          )}
+        </button>
+
+        <button onClick={handleLogout} className="btn btn-outline-light btn-sm">
+          Logout
+        </button>
+      </div>
+    </nav>
   );
 };
 

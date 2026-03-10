@@ -84,7 +84,7 @@ export const fetchAdminLeaveUnreadCount = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const initialState = {
@@ -112,7 +112,9 @@ const leaveSlice = createSlice({
         state.unreadCount = action.payload;
       })
       .addCase(fetchLeaves.pending, (state) => {
-        state.loading = true;
+        if (state.requests.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchLeaves.fulfilled, (state, action) => {
@@ -127,9 +129,8 @@ const leaveSlice = createSlice({
         state.actionLoading = true;
         state.error = null;
       })
-      .addCase(createLeave.fulfilled, (state, action) => {
+      .addCase(createLeave.fulfilled, (state) => {
         state.actionLoading = false;
-        state.requests.unshift(action.payload);
       })
       .addCase(createLeave.rejected, (state, action) => {
         state.actionLoading = false;
