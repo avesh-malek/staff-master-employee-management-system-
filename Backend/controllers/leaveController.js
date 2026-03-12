@@ -11,12 +11,16 @@ const createLeave = asyncHandler(async (req, res) => {
 });
 
 const getLeaves = asyncHandler(async (req, res) => {
+  const shouldPaginate = Boolean(req.query.page || req.query.limit);
+  const page = Number(req.query.page) || 1;
+  const limit = 10;
   const leaves = await leaveService.listLeaves({
     requester: req.user,
     filters: {
       status: req.query.status,
       month: req.query.month,
     },
+    pagination: shouldPaginate ? { page, limit } : null,
   });
   return res.status(200).json(leaves);
 });

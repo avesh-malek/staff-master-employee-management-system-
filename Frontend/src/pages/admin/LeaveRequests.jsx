@@ -34,11 +34,15 @@ const LeaveRequests = () => {
   const [monthFilter, setMonthFilter] = useState(
     searchParams.get("month") || "",
   );
+  const [page, setPage] = useState(1);
   const {
     requests: leaves,
     loading,
     actionLoading,
     error,
+    total,
+    limit,
+    totalPages,
   } = useSelector((state) => state.leave);
 
   useEffect(() => {
@@ -46,15 +50,43 @@ const LeaveRequests = () => {
     if (statusFilter) nextParams.status = statusFilter;
     if (monthFilter) nextParams.month = monthFilter;
     setSearchParams(nextParams);
-    dispatch(fetchLeaves(nextParams));
-  }, [dispatch, monthFilter, setSearchParams, statusFilter]);
+  }, [monthFilter, setSearchParams, statusFilter]);
+
+  useEffect(() => {
+    dispatch(
+      fetchLeaves({
+        status: statusFilter,
+        month: monthFilter,
+        page,
+      }),
+    );
+  }, [dispatch, monthFilter, page, statusFilter]);
+
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const handleAction = async (id, status) => {
-    await dispatch(updateLeaveStatus({ id, status }));
-    dispatch(fetchLeaves({ status: statusFilter, month: monthFilter }));
+    await dispatch(updateLeaveStatus({ id, status })).unwrap();
+    dispatch(fetchLeaves({ status: statusFilter, month: monthFilter, page }));
     dispatch(fetchAdminLeaveUnreadCount());
   };
 
+  const showPagination = total > limit;
+  const start = total === 0 ? 0 : (page - 1) * limit + 1;
+  const end = total === 0 ? 0 : Math.min(page * limit, total);
+
+  const maxVisiblePages = 5;
+
+  let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+  let endPage = startPage + maxVisiblePages - 1;
+
+  if (endPage > totalPages) {
+    endPage = totalPages;
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
   return (
     <div>
       <h6 className="mb-3 fw-semibold text-dark">Leave Requests</h6>
@@ -70,7 +102,10 @@ const LeaveRequests = () => {
                 type="month"
                 className="form-control form-control-sm"
                 value={monthFilter}
-                onChange={(event) => setMonthFilter(event.target.value)}
+                onChange={(event) => {
+                  setMonthFilter(event.target.value);
+                  setPage(1);
+                }}
               />
             </div>
             <div className="col-md-3">
@@ -78,7 +113,10 @@ const LeaveRequests = () => {
               <select
                 className="form-select form-select-sm"
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="">All</option>
                 <option value="pending">Pending</option>
@@ -196,6 +234,100 @@ const LeaveRequests = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && (
+            <div className="d-flex align-items-center justify-content-between mt-2">
+              <p className="mb-0 small text-muted">
+                Showing {start}-{end} of {total}
+              </p>
+
+              {showPagination && (
+                <ul className="pagination pagination-sm justify-content-end mb-0">
+                  <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
+                    <button
+                      className="page-link"
+                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      disabled={page === 1}
+                    >
+                      Previous
+                    </button>
+                  </li>
+
+                  {startPage > 1 && (
+                    <>
+                      <li className="page-item">
+                        <button
+                          className="page-link"
+                          onClick={() => setPage(1)}
+                        >
+                          1
+                        </button>
+                      </li>
+
+                      {startPage > 2 && (
+                        <li className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      )}
+                    </>
+                  )}
+
+                  {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+                    const pageNumber = startPage + i;
+
+                    return (
+                      <li
+                        key={pageNumber}
+                        className={`page-item ${pageNumber === page ? "active" : ""}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => setPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </button>
+                      </li>
+                    );
+                  })}
+
+                  {endPage < totalPages && (
+                    <>
+                      {endPage < totalPages - 1 && (
+                        <li className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      )}
+
+                      <li className="page-item">
+                        <button
+                          className="page-link"
+                          onClick={() => setPage(totalPages)}
+                        >
+                          {totalPages}
+                        </button>
+                      </li>
+                    </>
+                  )}
+
+                  <li
+                    className={`page-item ${
+                      page === totalPages ? "disabled" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() =>
+                        setPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={page === totalPages}
+                    >
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              )}
             </div>
           )}
         </div>

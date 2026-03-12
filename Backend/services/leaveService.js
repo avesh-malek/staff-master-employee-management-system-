@@ -68,7 +68,7 @@ const createLeave = async ({ payload, requester }) => {
   return normalizeLeave(populated);
 };
 
-const listLeaves = async ({ requester, filters = {} }) => {
+const listLeaves = async ({ requester, filters = {}, pagination = null }) => {
   const query = ["admin", "hr"].includes(requester.role)
     ? {}
     : { employee: requester.employeeId };
@@ -84,6 +84,29 @@ const listLeaves = async ({ requester, filters = {} }) => {
 
     query.fromDate = { $lte: end };
     query.toDate = { $gte: start };
+  }
+
+  if (pagination) {
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.max(1, Number(pagination.limit) || 10);
+    const skip = (page - 1) * limit;
+
+    const [leaves, total] = await Promise.all([
+      Leave.find(query)
+        .populate("employee", "employeeCode name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Leave.countDocuments(query),
+    ]);
+
+    return {
+      leaves: leaves.map(normalizeLeave),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   const leaves = await Leave.find(query)

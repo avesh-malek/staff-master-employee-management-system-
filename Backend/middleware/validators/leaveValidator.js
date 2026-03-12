@@ -15,6 +15,11 @@ const leaveIdParamValidation = [param("id").isMongoId()];
 const leaveListQueryValidation = [
   query("status").optional().isIn(leaveStatuses),
   query("month").optional().matches(/^\d{4}-\d{2}$/),
+  query("page").optional().isInt({ min: 1 }),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 10 })
+    .custom((value) => Number(value) === 10),
 ];
 
 const updateLeaveStatusValidation = [

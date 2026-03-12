@@ -10,6 +10,10 @@ export const fetchLeaves = createAsyncThunk(
 
       if (filters.status) params.set("status", filters.status);
       if (filters.month) params.set("month", filters.month);
+      if (filters.page) {
+        params.set("page", filters.page);
+        params.set("limit", 10);
+      }
 
       const query = params.toString();
       return await apiRequest({
@@ -93,6 +97,10 @@ const initialState = {
   actionLoading: false,
   error: null,
   unreadCount: 0,
+  total: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
 };
 
 const leaveSlice = createSlice({
@@ -104,6 +112,10 @@ const leaveSlice = createSlice({
       state.loading = false;
       state.actionLoading = false;
       state.error = null;
+      state.total = 0;
+      state.page = 1;
+      state.limit = 10;
+      state.totalPages = 1;
     },
   },
   extraReducers: (builder) => {
@@ -119,7 +131,11 @@ const leaveSlice = createSlice({
       })
       .addCase(fetchLeaves.fulfilled, (state, action) => {
         state.loading = false;
-        state.requests = action.payload;
+        state.requests = action.payload.leaves || [];
+        state.total = action.payload.total ?? 0;
+        state.page = action.payload.page ?? 1;
+        state.limit = action.payload.limit ?? 10;
+        state.totalPages = action.payload.totalPages ?? 1;
       })
       .addCase(fetchLeaves.rejected, (state, action) => {
         state.loading = false;
