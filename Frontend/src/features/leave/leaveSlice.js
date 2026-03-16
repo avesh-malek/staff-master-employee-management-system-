@@ -131,7 +131,7 @@ const leaveSlice = createSlice({
       })
       .addCase(fetchLeaves.fulfilled, (state, action) => {
         state.loading = false;
-        state.requests = action.payload.leaves || [];
+        state.requests = action.payload.data || [];
         state.total = action.payload.total ?? 0;
         state.page = action.payload.page ?? 1;
         state.limit = action.payload.limit ?? 10;

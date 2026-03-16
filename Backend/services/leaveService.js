@@ -4,6 +4,7 @@ const Employee = require("../models/Employee");
 const User = require("../models/User");
 const AppError = require("../utils/appError");
 const { sendLeaveStatusEmail } = require("../services/notificationService");
+const { getPagination, buildPaginationResult } = require("../utils/pagination");
 
 const assertObjectId = (id) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -87,9 +88,7 @@ const listLeaves = async ({ requester, filters = {}, pagination = null }) => {
   }
 
   if (pagination) {
-    const page = Math.max(1, Number(pagination.page) || 1);
-    const limit = Math.max(1, Number(pagination.limit) || 10);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = getPagination(pagination);
 
     const [leaves, total] = await Promise.all([
       Leave.find(query)
@@ -100,13 +99,12 @@ const listLeaves = async ({ requester, filters = {}, pagination = null }) => {
       Leave.countDocuments(query),
     ]);
 
-    return {
-      leaves: leaves.map(normalizeLeave),
+    return buildPaginationResult({
+      data: leaves.map(normalizeLeave),
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    });
   }
 
   const leaves = await Leave.find(query)
@@ -162,7 +160,7 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
   await leave.save();
 
   // 🔹 send email notification
- // ✅ send email safely
+  // ✅ send email safely
   try {
     if (leave.employee?.email) {
       await sendLeaveStatusEmail({

@@ -6,6 +6,7 @@ import {
   fetchEmployees,
 } from "../../features/employees/employeeSlice";
 import { toAssetUrl } from "../../services/api";
+import Pagination from "../../components/Pagination";
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff";
@@ -15,38 +16,38 @@ const Employees = () => {
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
 
-  const [statusFilter, setStatusFilter] = useState("all");
-
+  const pageFromUrl = Number(searchParams.get("page")) || 1;
+  const statusFromUrl = searchParams.get("status") || "all";
   const {
     list: employees,
     loading,
     error,
     actionLoading,
+    page,
+    totalPages,
   } = useSelector((state) => state.employees);
 
-  useEffect(() => {
-    dispatch(fetchEmployees());
+  const handlePageChange = (newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", newPage);
 
-    const statusFromUrl = searchParams.get("status");
-    if (statusFromUrl) {
-      setStatusFilter(statusFromUrl);
-    } else {
-      setStatusFilter("all");
-    }
-  }, [dispatch, searchParams]);
+    navigate(`/admin/employees?${params.toString()}`);
+  };
+
+  useEffect(() => {
+    dispatch(
+      fetchEmployees({
+        page: pageFromUrl,
+        status: statusFromUrl === "all" ? undefined : statusFromUrl,
+      }),
+    );
+  }, [dispatch, pageFromUrl, statusFromUrl]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this employee?"))
       return;
     await dispatch(deleteEmployee(id));
   };
-
-  const filteredEmployees =
-    statusFilter === "all"
-      ? employees
-      : employees.filter(
-          (emp) => emp.user?.employmentStatus === statusFilter
-        );
 
   return (
     <div>
@@ -58,16 +59,26 @@ const Employees = () => {
             <button
               key={status}
               className={`btn btn-sm ${
-                statusFilter === status
-                  ? "btn-primary"
-                  : "btn-outline-primary"
+                statusFromUrl === status ? "btn-primary" : "btn-outline-primary"
               }`}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+
+                if (status === "all") {
+                  params.delete("status");
+                } else {
+                  params.set("status", status);
+                }
+
+                params.set("page", 1);
+
+                navigate(`/admin/employees?${params.toString()}`);
+              }}
               style={{ textTransform: "capitalize" }}
             >
               {status.replace("_", " ")}
             </button>
-          )
+          ),
         )}
       </div>
 
@@ -93,31 +104,26 @@ const Employees = () => {
                 </thead>
 
                 <tbody className="small">
-                  {filteredEmployees.map((emp) => {
-                    const status =
-                      emp.user?.employmentStatus || "inactive";
+                  {employees.map((emp) => {
+                    const status = emp.user?.employmentStatus || "inactive";
 
                     const statusColor =
                       status === "active"
                         ? "success"
                         : status === "on_leave"
-                        ? "warning"
-                        : status === "terminated"
-                        ? "danger"
-                        : "secondary";
+                          ? "warning"
+                          : status === "terminated"
+                            ? "danger"
+                            : "secondary";
 
                     return (
                       <tr key={emp._id} className="text-center">
-                        <td className="fw-semibold">
-                          {emp.employeeCode}
-                        </td>
+                        <td className="fw-semibold">{emp.employeeCode}</td>
 
                         <td
                           className="text-start"
                           style={{ cursor: "pointer" }}
-                          onClick={() =>
-                            navigate(`/admin/employee/${emp._id}`)
-                          }
+                          onClick={() => navigate(`/admin/employee/${emp._id}`)}
                         >
                           <div className="d-flex align-items-center">
                             <img
@@ -135,9 +141,7 @@ const Employees = () => {
                               }}
                             />
                             <div>
-                              <div className="fw-semibold">
-                                {emp.name}
-                              </div>
+                              <div className="fw-semibold">{emp.name}</div>
                               <div
                                 className="text-muted"
                                 style={{ fontSize: "12px" }}
@@ -153,9 +157,7 @@ const Employees = () => {
                         <td>{emp.employmentType}</td>
 
                         <td>
-                          <span
-                            className={`badge bg-${statusColor} px-2 py-1`}
-                          >
+                          <span className={`badge bg-${statusColor} px-2 py-1`}>
                             {status.replace("_", " ")}
                           </span>
                         </td>
@@ -176,9 +178,7 @@ const Employees = () => {
                               className="btn btn-outline-secondary btn-sm px-2 py-0"
                               style={{ fontSize: "12px" }}
                               onClick={() =>
-                                navigate(
-                                  `/admin/employees/edit/${emp._id}`
-                                )
+                                navigate(`/admin/employees/edit/${emp._id}`)
                               }
                             >
                               Edit
@@ -187,9 +187,7 @@ const Employees = () => {
                             <button
                               className="btn btn-outline-danger btn-sm px-2 py-0"
                               style={{ fontSize: "12px" }}
-                              onClick={() =>
-                                handleDelete(emp._id)
-                              }
+                              onClick={() => handleDelete(emp._id)}
                               disabled={actionLoading}
                             >
                               Delete
@@ -200,12 +198,9 @@ const Employees = () => {
                     );
                   })}
 
-                  {filteredEmployees.length === 0 && (
+                  {employees.length === 0 && (
                     <tr>
-                      <td
-                        colSpan="7"
-                        className="text-center text-muted py-3"
-                      >
+                      <td colSpan="7" className="text-center text-muted py-3">
                         No employees found
                       </td>
                     </tr>
@@ -216,6 +211,12 @@ const Employees = () => {
           )}
         </div>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 };

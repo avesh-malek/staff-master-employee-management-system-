@@ -6,6 +6,7 @@ import {
   updateLeaveStatus,
   fetchAdminLeaveUnreadCount,
 } from "../../features/leave/leaveSlice";
+import Pagination from "../../components/Pagination";
 
 const badgeClass = (status) => {
   if (status === "approved") return "bg-success";
@@ -78,15 +79,6 @@ const LeaveRequests = () => {
   const start = total === 0 ? 0 : (page - 1) * limit + 1;
   const end = total === 0 ? 0 : Math.min(page * limit, total);
 
-  const maxVisiblePages = 5;
-
-  let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-  let endPage = startPage + maxVisiblePages - 1;
-
-  if (endPage > totalPages) {
-    endPage = totalPages;
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
   return (
     <div>
       <h6 className="mb-3 fw-semibold text-dark">Leave Requests</h6>
@@ -244,89 +236,13 @@ const LeaveRequests = () => {
               </p>
 
               {showPagination && (
-                <ul className="pagination pagination-sm justify-content-end mb-0">
-                  <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
-                    <button
-                      className="page-link"
-                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                      disabled={page === 1}
-                    >
-                      Previous
-                    </button>
-                  </li>
-
-                  {startPage > 1 && (
-                    <>
-                      <li className="page-item">
-                        <button
-                          className="page-link"
-                          onClick={() => setPage(1)}
-                        >
-                          1
-                        </button>
-                      </li>
-
-                      {startPage > 2 && (
-                        <li className="page-item disabled">
-                          <span className="page-link">...</span>
-                        </li>
-                      )}
-                    </>
-                  )}
-
-                  {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
-                    const pageNumber = startPage + i;
-
-                    return (
-                      <li
-                        key={pageNumber}
-                        className={`page-item ${pageNumber === page ? "active" : ""}`}
-                      >
-                        <button
-                          className="page-link"
-                          onClick={() => setPage(pageNumber)}
-                        >
-                          {pageNumber}
-                        </button>
-                      </li>
-                    );
-                  })}
-
-                  {endPage < totalPages && (
-                    <>
-                      {endPage < totalPages - 1 && (
-                        <li className="page-item disabled">
-                          <span className="page-link">...</span>
-                        </li>
-                      )}
-
-                      <li className="page-item">
-                        <button
-                          className="page-link"
-                          onClick={() => setPage(totalPages)}
-                        >
-                          {totalPages}
-                        </button>
-                      </li>
-                    </>
-                  )}
-
-                  <li
-                    className={`page-item ${
-                      page === totalPages ? "disabled" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        setPage((prev) => Math.min(totalPages, prev + 1))
-                      }
-                      disabled={page === totalPages}
-                    >
-                      Next
-                    </button>
-                  </li>
-                </ul>
+                <div className="d-flex justify-content-end">
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
+                </div>
               )}
             </div>
           )}

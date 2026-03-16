@@ -5,6 +5,7 @@ import { fetchEmployees } from "../../features/employees/employeeSlice";
 import {
   fetchLeaves,
   updateLeaveStatus,
+  fetchAdminLeaveUnreadCount,
 } from "../../features/leave/leaveSlice";
 
 const Dashboard = () => {
@@ -12,19 +13,22 @@ const Dashboard = () => {
   const dispatch = useDispatch();
 
   const { list: employees } = useSelector((state) => state.employees);
-  const { requests: leaves } = useSelector((state) => state.leave);
+  const { requests: leaves, unreadCount } = useSelector((state) => state.leave);
 
   useEffect(() => {
-    dispatch(fetchEmployees());
+    dispatch(fetchEmployees({ page: 1, limit: 1000 }));
     dispatch(fetchLeaves());
   }, [dispatch]);
 
-  const pendingLeaveItems = leaves.filter(
-    (leave) => leave.status === "pending"
-  );
+  const pendingLeaves = unreadCount;
 
   const handleApproveAll = async () => {
+    const pendingLeaveItems = leaves.filter(
+      (leave) => leave.status === "pending",
+    );
+
     if (!pendingLeaveItems.length) return;
+
     if (!window.confirm("Approve all pending leave requests?")) return;
 
     await Promise.all(
@@ -33,27 +37,27 @@ const Dashboard = () => {
           updateLeaveStatus({
             id: leave._id,
             status: "approved",
-          })
-        )
-      )
+          }),
+        ),
+      ),
     );
 
-    dispatch(fetchLeaves());
+    dispatch(fetchLeaves({ page: 1 }));
+    dispatch(fetchAdminLeaveUnreadCount());
   };
 
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(
-    (item) => item.user?.employmentStatus === "active"
+    (item) => item.user?.employmentStatus === "active",
   ).length;
-  const pendingLeaves = pendingLeaveItems.length;
+
   const totalPayroll = employees.reduce(
     (sum, emp) => sum + (Number(emp.salary) || 0),
-    0
+    0,
   );
 
   return (
     <div className="container-fluid">
-
       <div className="mb-4">
         <h4 className="fw-bold mb-1">Admin Dashboard</h4>
         <p className="text-muted mb-0" style={{ fontSize: "14px" }}>
@@ -77,9 +81,9 @@ const Dashboard = () => {
           },
           {
             title: "Pending Leaves",
-            value: pendingLeaves,
+            value: pendingLeaves > 10 ? "10+" : pendingLeaves,
             color: "warning",
-            route: "/admin/leaves?status=pending",
+            route: "/admin/leaves",
           },
           {
             title: "Payroll",
@@ -111,25 +115,19 @@ const Dashboard = () => {
         <div className="col-md-6">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <h5 className="fw-semibold mb-3">
-                Manage Employees
-              </h5>
+              <h5 className="fw-semibold mb-3">Manage Employees</h5>
 
               <div className="d-flex gap-2 flex-wrap">
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() =>
-                    navigate("/admin/add-employee")
-                  }
+                  onClick={() => navigate("/admin/add-employee")}
                 >
                   Add Employee
                 </button>
 
                 <button
                   className="btn btn-outline-secondary btn-sm"
-                  onClick={() =>
-                    navigate("/admin/employees")
-                  }
+                  onClick={() => navigate("/admin/employees")}
                 >
                   View Employees
                 </button>
@@ -141,16 +139,12 @@ const Dashboard = () => {
         <div className="col-md-6">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <h5 className="fw-semibold mb-3">
-                Manage Leaves
-              </h5>
+              <h5 className="fw-semibold mb-3">Manage Leaves</h5>
 
               <div className="d-flex gap-2 flex-wrap">
                 <button
                   className="btn btn-warning btn-sm"
-                  onClick={() =>
-                    navigate("/admin/leaves")
-                  }
+                  onClick={() => navigate("/admin/leaves")}
                 >
                   View Leave Requests
                 </button>
@@ -167,7 +161,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };

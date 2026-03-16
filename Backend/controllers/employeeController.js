@@ -12,12 +12,16 @@ const createEmployee = asyncHandler(async (req, res) => {
 });
 
 const getEmployees = asyncHandler(async (req, res) => {
-  const employees = await employeeService.listEmployees();
-  return res.status(200).json(employees);
+  const result = await employeeService.listEmployees(req.query);
+
+  return res.status(200).json(result);
 });
 
 const getEmployeeById = asyncHandler(async (req, res) => {
-  const employee = await employeeService.getEmployeeById(req.params.id, req.user);
+  const employee = await employeeService.getEmployeeById(
+    req.params.id,
+    req.user,
+  );
   return res.status(200).json(employee);
 });
 

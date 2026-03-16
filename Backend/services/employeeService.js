@@ -9,7 +9,7 @@ const { getNextSequence } = require("./counterService");
 const { generateRandomToken, hashToken } = require("../utils/token");
 const { sendPasswordSetupEmail } = require("./notificationService");
 const { deleteFileIfExists } = require("../utils/file");
-
+const { getPagination, buildPaginationResult } = require("../utils/pagination");
 const toEmployeeCode = (seq) => `EMP${String(seq).padStart(3, "0")}`;
 const EMPLOYMENT_STATUS_VALUES = ["active", "inactive", "terminated", "on_leave"];
 
@@ -124,9 +124,22 @@ const createEmployee = async ({ payload, actor }) => {
   }
 };
 
-const listEmployees = async () => {
-  const employees = await Employee.find()
-    .populate("user", "role employmentStatus");
+const listEmployees = async (query) => {
+  const { page, limit, skip } = getPagination(query);
+  const { status } = query;
+
+  let employees = await Employee.find()
+    .populate("user", "role employmentStatus")
+    .sort({ createdAt: -1 });
+
+  // FILTER BY STATUS
+  if (status) {
+    employees = employees.filter(
+      (emp) => emp.user?.employmentStatus === status
+    );
+  }
+
+  const total = employees.length;
 
   const priority = {
     active: 1,
@@ -139,17 +152,21 @@ const listEmployees = async () => {
     const statusA = a.user?.employmentStatus || "inactive";
     const statusB = b.user?.employmentStatus || "inactive";
 
-    const orderDiff = priority[statusA] - priority[statusB];
+    const diff = priority[statusA] - priority[statusB];
 
-    // If same status, sort by newest first
-    if (orderDiff === 0) {
-      return b.createdAt - a.createdAt;
-    }
+    if (diff !== 0) return diff;
 
-    return orderDiff;
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  return employees.map(getPublicEmployee);
+  const paginatedEmployees = employees.slice(skip, skip + limit);
+
+  return buildPaginationResult({
+    data: paginatedEmployees.map(getPublicEmployee),
+    total,
+    page,
+    limit,
+  });
 };
 
 const getEmployeeById = async (id, requester) => {

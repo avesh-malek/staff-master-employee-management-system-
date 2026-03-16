@@ -3,14 +3,24 @@ import { apiRequest } from "../../services/api";
 
 export const fetchEmployees = createAsyncThunk(
   "employees/fetchEmployees",
-  async (_, { getState, rejectWithValue }) => {
+  async ({ page = 1, limit = 10, status } = {}, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.token;
-      return await apiRequest({ path: "/api/employees", token });
+
+      let path = `/api/employees?page=${page}&limit=${limit}`;
+
+      if (status) {
+        path += `&status=${status}`;
+      }
+
+      return await apiRequest({
+        path,
+        token,
+      });
     } catch (error) {
       return rejectWithValue(error);
     }
-  },
+  }
 );
 
 export const fetchEmployeeById = createAsyncThunk(
@@ -110,6 +120,9 @@ export const uploadMyProfilePicture = createAsyncThunk(
 
 const initialState = {
   list: [],
+  page: 1,
+  total: 0,
+  totalPages: 1,
   selected: null,
   myProfile: null,
   loading: false,
@@ -151,7 +164,10 @@ const employeeSlice = createSlice({
       })
       .addCase(fetchEmployees.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = action.payload.data;
+        state.total = action.payload.total;
+        state.page = action.payload.page;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchEmployees.rejected, (state, action) => {
         state.loading = false;
@@ -229,5 +245,6 @@ const employeeSlice = createSlice({
   },
 });
 
-export const { clearEmployeeState, clearFieldError ,clearEmployeeErrors} = employeeSlice.actions;
+export const { clearEmployeeState, clearFieldError, clearEmployeeErrors } =
+  employeeSlice.actions;
 export default employeeSlice.reducer;
