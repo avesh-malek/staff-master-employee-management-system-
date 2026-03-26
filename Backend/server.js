@@ -14,7 +14,7 @@ const employeeRoutes = require("./routes/employeeRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
-
+const { startCronJobs } = require("./services/cronJobs");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -56,6 +56,8 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
+     await startCronJobs()
+
     app.listen(PORT);
   } catch (error) {
     console.error(error);

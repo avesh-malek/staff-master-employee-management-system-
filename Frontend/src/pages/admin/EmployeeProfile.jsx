@@ -29,49 +29,115 @@ const EmployeeProfile = () => {
 
   return (
     <div>
-      <button className="btn btn-link mb-3" onClick={() => navigate("/admin/employees")}>Back to Employees</button>
+  {/* HEADER */}
+  <div className="d-flex align-items-center justify-content-between mb-3">
+    <h6 className="fw-semibold text-dark mb-0">Employee Profile</h6>
 
-      <h3 className="mb-4 fw-bold">Employee Profile</h3>
+    <button
+      className="btn btn-outline-secondary btn-sm"
+      onClick={() => navigate("/admin/employees")}
+    >
+      ← Back
+    </button>
+  </div>
 
-      <div className="card shadow-sm mb-4">
-        <div className="card-body d-flex flex-column align-items-center text-center">
-          <img
-            src={employee.profilePic ? toAssetUrl(employee.profilePic) : "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"}
-            alt={employee.name}
-            className="rounded-circle mb-3"
-            style={{ width: "120px", height: "120px", objectFit: "cover" }}
-          />
-          <h5 className="fw-bold">{employee.name}</h5>
-          <p className="text-muted">{employee.designation} - {employee.department}</p>
-        </div>
+  {/* PROFILE CARD */}
+  <div className="card shadow border-0 mb-3">
+    <div className="card-body py-3 text-center">
+      <img
+        src={
+          employee.profilePic
+            ? toAssetUrl(employee.profilePic)
+            : "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"
+        }
+        alt={employee.name}
+        className="rounded-circle mb-2"
+        style={{
+          width: "140px",   // 🔥 increased size
+          height: "140px",
+          objectFit: "cover",
+        }}
+      />
+
+      <div className="fw-semibold">{employee.name}</div>
+      <div className="text-muted small">
+        {employee.designation} • {employee.department}
       </div>
+    </div>
+  </div>
 
-      <div className="row g-4">
-        <div className="col-md-6">
-          <div className="card shadow-sm"><div className="card-body">
-            <h5 className="fw-bold mb-3">Personal Information</h5>
-            <p><strong>Email:</strong> {employee.email}</p>
-            <p><strong>Phone:</strong> {employee.phone}</p>
-            <p><strong>Address:</strong> {employee.address || "-"}</p>
-          </div></div>
-        </div>
+  {/* DETAILS */}
+  <div className="row g-3">
+    
+    {/* PERSONAL */}
+    <div className="col-md-6">
+      <div className="card shadow border-0 h-100">
+        <div className="card-body py-3">
+          <h6 className="fw-semibold mb-3">Personal</h6>
 
-        <div className="col-md-6">
-          <div className="card shadow-sm"><div className="card-body">
-            <h5 className="fw-bold mb-3">Job Information</h5>
-            <p><strong>Employee Code:</strong> {employee.employeeCode}</p>
-            <p><strong>Role:</strong> {employee.role}</p>
-            <p><strong>Employment:</strong> {employee.employmentType}</p>
-            <p>
-              <strong>Employment Status:</strong>{" "}
-              <span className={`badge ${status.badge}`}>{status.label}</span>
-            </p>
-            <p><strong>Salary:</strong> Rs {employee.salary?.toLocaleString()}</p>
-            <p><strong>Joining Date:</strong> {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : "-"}</p>
-          </div></div>
+          <div className="small mb-2">
+            <span className="text-muted">Email:</span><br />
+            {employee.email}
+          </div>
+
+          <div className="small mb-2">
+            <span className="text-muted">Phone:</span><br />
+            {employee.phone}
+          </div>
+
+          <div className="small">
+            <span className="text-muted">Address:</span><br />
+            {employee.address || "-"}
+          </div>
         </div>
       </div>
     </div>
+
+    {/* JOB */}
+    <div className="col-md-6">
+      <div className="card shadow border-0 h-100">
+        <div className="card-body py-3">
+          <h6 className="fw-semibold mb-3">Job</h6>
+
+          <div className="small mb-2">
+            <span className="text-muted">Employee Code:</span><br />
+            {employee.employeeCode}
+          </div>
+
+          <div className="small mb-2">
+            <span className="text-muted">Role:</span><br />
+            {employee.role}
+          </div>
+
+          <div className="small mb-2">
+            <span className="text-muted">Employment:</span><br />
+            {employee.employmentType}
+          </div>
+
+          <div className="small mb-2">
+            <span className="text-muted">Status:</span><br />
+            <span className={`badge ${status.badge}`}>
+              {status.label}
+            </span>
+          </div>
+
+          <div className="small mb-2">
+            <span className="text-muted">Salary:</span><br />
+            ₹ {employee.salary?.toLocaleString()}
+          </div>
+
+          <div className="small">
+            <span className="text-muted">Joining Date:</span><br />
+            {employee.joiningDate
+              ? new Date(employee.joiningDate).toLocaleDateString()
+              : "-"}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
   );
 };
 

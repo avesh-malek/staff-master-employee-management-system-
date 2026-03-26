@@ -17,6 +17,7 @@ import LeaveRequests from "./pages/admin/LeaveRequests";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import EditEmployee from "./pages/admin/EditEmployee";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
+import AttendanceSettings from "./pages/admin/AttendanceSettings";
 
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import Profile from "./pages/employee/Profile";
@@ -90,6 +91,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["admin", "hr"]}>
             <AttendanceManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/attendance/settings",
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "hr"]}>
+            <AttendanceSettings />
           </ProtectedRoute>
         ),
       },

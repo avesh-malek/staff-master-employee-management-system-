@@ -7,6 +7,7 @@ import {
   updateLeaveStatus,
   fetchAdminLeaveUnreadCount,
 } from "../../features/leave/leaveSlice";
+import { fetchAttendanceDashboard } from "../../features/attendance/attendanceSlice";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -14,10 +15,12 @@ const Dashboard = () => {
 
   const { list: employees } = useSelector((state) => state.employees);
   const { requests: leaves, unreadCount } = useSelector((state) => state.leave);
+  const { dashboard } = useSelector((state) => state.attendance);
 
   useEffect(() => {
     dispatch(fetchEmployees({ page: 1, limit: 1000 }));
     dispatch(fetchLeaves());
+    dispatch(fetchAttendanceDashboard());
   }, [dispatch]);
 
   const pendingLeaves = unreadCount;
@@ -93,6 +96,62 @@ const Dashboard = () => {
           },
         ].map((card, index) => (
           <div className="col-md-3" key={index}>
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{ cursor: card.route ? "pointer" : "default" }}
+              onClick={() => card.route && navigate(card.route)}
+            >
+              <div className="card-body">
+                <h6 className="text-muted mb-2" style={{ fontSize: "13px" }}>
+                  {card.title}
+                </h6>
+                <h3 className={`fw-bold text-${card.color} mb-0`}>
+                  {card.value}
+                </h3>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-3">
+        <h6 className="text-muted mb-0">Attendance Overview</h6>
+      </div>
+
+      <div className="row g-4 mb-4">
+        {[
+          {
+            title: "Total Employees",
+            value: dashboard.totalEmployees,
+            color: "primary",
+            route: "/admin/attendance", // optional
+          },
+          {
+            title: "Present",
+            value: dashboard.present,
+            color: "success",
+            route: "/admin/attendance?status=present",
+          },
+          {
+            title: "Late",
+            value: dashboard.late,
+            color: "warning",
+            route: "/admin/attendance?status=late",
+          },
+          {
+            title: "Not Checked-In",
+            value: dashboard.notCheckedIn,
+            color: "secondary",
+            route: "/admin/attendance?status=not_checked_in",
+          },
+          {
+            title: "Absent",
+            value: dashboard.absent,
+            color: "danger",
+            route: "/admin/attendance?status=absent",
+          },
+        ].map((card, index) => (
+          <div className="col" key={`attendance-${index}`}>
             <div
               className="card border-0 shadow-sm h-100"
               style={{ cursor: card.route ? "pointer" : "default" }}

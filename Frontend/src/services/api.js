@@ -7,8 +7,10 @@ const parseResponse = async (response) => {
   const payload = isJson ? await response.json() : null;
 
   if (!response.ok) {
-
-    throw payload || { message: "Request failed" };
+    throw {
+      message: payload?.message || "Request failed",
+      errors: payload?.errors || {},
+    };
   }
 
   return payload;

@@ -15,6 +15,8 @@ const getMyAttendance = asyncHandler(async (req, res) => {
   const records = await attendanceService.listMyAttendance({
     requester: req.user,
     month: req.query.month,
+    page: req.query.page,
+    limit: req.query.limit,
   });
 
   return res.status(200).json(records);
@@ -35,10 +37,30 @@ const getAttendanceAdmin = asyncHandler(async (req, res) => {
       employeeId: req.query.employeeId,
       date: req.query.date,
       department: req.query.department,
+      status: req.query.status,
+      page: req.query.page,
+      limit: req.query.limit,
     },
   });
 
   return res.status(200).json(records);
+});
+
+const getAttendancePolicy = asyncHandler(async (req, res) => {
+  const policy = await attendanceService.getAttendancePolicy();
+  return res.status(200).json(policy);
+});
+
+const updateAttendancePolicy = asyncHandler(async (req, res) => {
+  const policy = await attendanceService.updateAttendancePolicy({
+    payload: req.body,
+  });
+  return res.status(200).json(policy);
+});
+
+const getAttendanceDashboard = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getAttendanceDashboard();
+  return res.status(200).json(data);
 });
 
 module.exports = {
@@ -47,4 +69,7 @@ module.exports = {
   getMyAttendance,
   getAttendanceByEmployee,
   getAttendanceAdmin,
+  getAttendancePolicy,
+  updateAttendancePolicy,
+  getAttendanceDashboard,
 };

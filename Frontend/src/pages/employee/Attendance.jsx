@@ -1,99 +1,294 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { checkIn, checkOut, fetchMyAttendance } from "../../features/attendance/attendanceSlice";
+import {
+  checkIn,
+  checkOut,
+  fetchMyAttendance,
+} from "../../features/attendance/attendanceSlice";
+import Pagination from "../../components/Pagination";
 
 const Attendance = () => {
   const dispatch = useDispatch();
-  const [month, setMonth] = useState("");
 
-  const { records, loading, actionLoading, error } = useSelector((state) => state.attendance);
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const [month, setMonth] = useState(getCurrentMonth());
+  const [page, setPage] = useState(1);
+
+  const {
+    records,
+    loading,
+    actionLoading,
+    error,
+    total,
+    totalPages,
+    limit,
+  } = useSelector((state) => state.attendance);
 
   useEffect(() => {
-    dispatch(fetchMyAttendance(month));
-  }, [dispatch, month]);
+    dispatch(fetchMyAttendance({ month, page }));
+  }, [dispatch, month, page]);
 
   const todayRecord = useMemo(() => {
     const today = new Date().toDateString();
-    return records.find((item) => new Date(item.date).toDateString() === today);
+    return records.find(
+      (item) => new Date(item.date).toDateString() === today
+    );
   }, [records]);
 
+  // ✅ ADD THIS (IMPORTANT)
+  const isCheckedIn = Boolean(todayRecord?.checkIn);
+  const isCheckedOut = Boolean(todayRecord?.checkOut);
+
+  // ✅ FIXED
   const onCheckIn = async () => {
-    await dispatch(checkIn());
-    dispatch(fetchMyAttendance(month));
+    const res = await dispatch(checkIn());
+
+    if (res.meta.requestStatus === "fulfilled") {
+      dispatch(fetchMyAttendance({ month, page }));
+    }
   };
 
+  // ✅ FIXED
   const onCheckOut = async () => {
-    await dispatch(checkOut());
-    dispatch(fetchMyAttendance(month));
+    if (!isCheckedIn) return;
+
+    const res = await dispatch(checkOut());
+
+    if (res.meta.requestStatus === "fulfilled") {
+      dispatch(fetchMyAttendance({ month, page }));
+    }
+  };
+
+  const formatHours = (hours) => {
+    if (!hours) return "-";
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
   };
 
   return (
     <div>
-      <h3 className="mb-4 fw-bold">My Attendance</h3>
-      {error && <div className="alert alert-danger py-2">{error}</div>}
+      {/* HEADER */}
+      <div className="mb-3">
+        <h6 className="fw-semibold text-dark mb-0">My Attendance</h6>
+      </div>
 
-      <div className="card shadow-sm mb-4">
-        <div className="card-body text-center">
-          <h5 className="fw-bold mb-3">Today's Attendance</h5>
+      {/* ✅ ERROR LIKE SETTINGS */}
+      {error && (
+        <div className="alert alert-danger py-2 small">
+          <p className="mb-0">{error}</p>
+        </div>
+      )}
+
+      {/* TODAY CARD */}
+      <div className="card shadow border-0 mb-3">
+        <div className="card-body text-center py-3">
+          <h6 className="fw-semibold mb-3">Today</h6>
+
           {todayRecord ? (
-            <div className="row mb-3">
-              <div className="col-md-3"><p className="text-muted mb-1">Date</p><h6>{new Date(todayRecord.date).toLocaleDateString()}</h6></div>
-              <div className="col-md-3"><p className="text-muted mb-1">Check In</p><h6 className="text-success">{todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString() : "-"}</h6></div>
-              <div className="col-md-3"><p className="text-muted mb-1">Check Out</p><h6 className="text-warning">{todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString() : "-"}</h6></div>
-              <div className="col-md-3"><p className="text-muted mb-1">Working Hours</p><h6>{todayRecord.workingHours || 0}</h6></div>
+            <div className="row g-2 mb-3 small">
+              <div className="col-md-3">
+                <div className="text-muted">Date</div>
+                <div className="fw-semibold">
+                  {new Date(todayRecord.date).toLocaleDateString()}
+                </div>
+              </div>
+
+              <div className="col-md-3">
+                <div className="text-muted">Check In</div>
+                <div className="fw-semibold text-success">
+                  {todayRecord.checkIn
+                    ? new Date(todayRecord.checkIn).toLocaleTimeString()
+                    : "-"}
+                </div>
+              </div>
+
+              <div className="col-md-3">
+                <div className="text-muted">Check Out</div>
+                <div className="fw-semibold text-warning">
+                  {todayRecord.checkOut
+                    ? new Date(todayRecord.checkOut).toLocaleTimeString()
+                    : "-"}
+                </div>
+              </div>
+
+              <div className="col-md-3">
+                <div className="text-muted">Hours</div>
+                <div className="fw-semibold">
+                  {formatHours(todayRecord.workingHours)}
+                </div>
+              </div>
             </div>
           ) : (
-            <p className="text-muted">No attendance record for today yet.</p>
+            <p className="text-muted small mb-3">
+              No attendance record for today
+            </p>
           )}
 
           <div className="d-flex justify-content-center gap-2">
-            <button className="btn btn-primary" onClick={onCheckIn} disabled={actionLoading}>Check In</button>
-            <button className="btn btn-outline-primary" onClick={onCheckOut} disabled={actionLoading}>Check Out</button>
+            {/* ✅ DISABLED LOGIC */}
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={onCheckIn}
+              disabled={actionLoading || isCheckedIn}
+            >
+              {actionLoading ? "..." : "Check In"}
+            </button>
+
+            <button
+              className="btn btn-outline-primary btn-sm"
+              onClick={onCheckOut}
+              disabled={actionLoading || !isCheckedIn || isCheckedOut}
+            >
+              Check Out
+            </button>
           </div>
+
+          {/* ✅ INFO MESSAGE */}
+          {isCheckedIn && !isCheckedOut && (
+            <div className="alert alert-info py-2 small mt-2">
+              <p className="mb-0">
+                Auto checkout is enabled. Only check out if you want early leave or half day.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <div className="row align-items-end g-3">
-            <div className="col-md-4">
-              <label className="form-label">Select Month</label>
-              <input type="month" className="form-control" value={month} onChange={(e) => setMonth(e.target.value)} />
+      {/* FILTER */}
+      <div className="card shadow border-0 mb-3">
+        <div className="card-body py-2">
+          <div className="row g-2 align-items-end">
+            <div className="col-md-3">
+              <label className="form-label small mb-1">Month</label>
+              <input
+                type="month"
+                className="form-control form-control-sm"
+                value={month}
+                onChange={(e) => {
+                  setMonth(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+
+            <div className="col-md-2 d-flex">
+              <button
+                className="btn btn-outline-secondary btn-sm w-100"
+                onClick={() => {
+                  setMonth(getCurrentMonth());
+                  setPage(1);
+                }}
+              >
+                Reset
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="card shadow-sm">
-        <div className="card-body">
+      {/* TABLE (unchanged except status already added) */}
+      <div className="card shadow border-0">
+        <div className="card-body py-2">
           {loading ? (
-            <p className="mb-0">Loading attendance...</p>
+            <p className="mb-0 small">Loading attendance...</p>
           ) : (
-            <table className="table table-bordered table-hover align-middle text-center">
-              <thead className="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Check In</th>
-                  <th>Check Out</th>
-                  <th>Working Hours</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((record) => (
-                  <tr key={record._id}>
-                    <td>{new Date(record.date).toLocaleDateString()}</td>
-                    <td>{record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : "-"}</td>
-                    <td>{record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : "-"}</td>
-                    <td>{record.workingHours || 0}</td>
+            <div className="table-responsive">
+              <table className="table table-bordered table-hover table-sm align-middle text-center">
+                <thead className="table-light">
+                  <tr className="small">
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Hours</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-                {records.length === 0 && (
-                  <tr><td colSpan="4" className="text-muted">No attendance records found</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody className="small">
+                  {records.map((record) => (
+                    <tr key={record._id}>
+                      <td>{new Date(record.date).toLocaleDateString()}</td>
+                      <td>
+                        {record.checkIn
+                          ? new Date(record.checkIn).toLocaleTimeString()
+                          : "-"}
+                      </td>
+                      <td>
+                        {record.checkOut
+                          ? new Date(record.checkOut).toLocaleTimeString()
+                          : "-"}
+                      </td>
+                      <td>{formatHours(record.workingHours)}</td>
+
+                      <td>
+                        {record.status === "present" && (
+                          <span className="badge bg-success">Present</span>
+                        )}
+                        {record.status === "late" && (
+                          <span className="badge bg-danger">Late</span>
+                        )}
+                        {record.status === "not_checked_in" && (
+                          <span className="badge bg-secondary">
+                            Not Checked-In
+                          </span>
+                        )}
+                        {record.status === "absent" && (
+                          <span className="badge bg-dark">Absent</span>
+                        )}
+                        {record.status === "grace_late" && (
+                          <span className="badge bg-warning text-dark">
+                            Grace Late
+                          </span>
+                        )}
+                        {record.status === "half_day" && (
+                          <span className="badge bg-info">Half Day</span>
+                        )}
+                        {record.status === "early_leave" && (
+                          <span className="badge bg-warning">
+                            Early Leave
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {records.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="text-muted py-2 small">
+                        No attendance records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
+
+        {!loading && (
+          <div className="card-footer bg-white border-0 py-2">
+            <div className="d-flex align-items-center justify-content-between">
+              <p className="mb-0 small text-muted">
+                Showing{" "}
+                {total === 0 ? 0 : (page - 1) * limit + 1}–
+                {total === 0 ? 0 : Math.min(page * limit, total)} of {total}
+              </p>
+
+              {total > limit && (
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
