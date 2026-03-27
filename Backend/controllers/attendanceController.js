@@ -17,6 +17,7 @@ const getMyAttendance = asyncHandler(async (req, res) => {
     month: req.query.month,
     page: req.query.page,
     limit: req.query.limit,
+    status: req.query.status, // ✅ ADD THIS LINE
   });
 
   return res.status(200).json(records);

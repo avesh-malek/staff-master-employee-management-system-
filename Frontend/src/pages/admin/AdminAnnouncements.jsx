@@ -9,9 +9,8 @@ import {
 
 const AdminAnnouncements = () => {
   const dispatch = useDispatch();
-  const { list: announcements, loading, actionLoading, error } = useSelector(
-    (state) => state.announcements
-  );
+  const { list: announcements, loading, actionLoading, error } =
+    useSelector((state) => state.announcements);
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +22,9 @@ const AdminAnnouncements = () => {
 
   const handlePublish = async () => {
     if (!title.trim() || !message.trim()) return;
+
     const result = await dispatch(addAnnouncement({ title, message }));
+
     if (!result.error) {
       setTitle("");
       setMessage("");
@@ -33,103 +34,112 @@ const AdminAnnouncements = () => {
 
   return (
     <div>
-  {/* HEADER */}
-  <div className="mb-3">
-    <h6 className="fw-semibold text-dark mb-0">Announcements</h6>
-  </div>
+      {/* HEADER */}
+      <h6 className="mb-3 fw-semibold text-dark">Announcements</h6>
 
-  {error && <div className="alert alert-danger py-2 small">{error}</div>}
-
-  {/* CREATE */}
-  <div className="card shadow border-0 mb-3">
-    <div className="card-body py-3">
-      <h6 className="mb-3 fw-semibold">Create Announcement</h6>
-
-      <div className="mb-2">
-        <label className="form-label small mb-1">Title</label>
-        <input
-          type="text"
-          className="form-control form-control-sm"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </div>
-
-      <div className="mb-2">
-        <label className="form-label small mb-1">Message</label>
-        <textarea
-          className="form-control form-control-sm"
-          rows="3"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-      </div>
-
-      <button
-        className="btn btn-primary btn-sm mt-2 px-3"
-        onClick={handlePublish}
-        disabled={actionLoading}
-      >
-        {actionLoading ? (
-          <>
-            <span className="spinner-border spinner-border-sm me-2"></span>
-            Publishing...
-          </>
-        ) : (
-          "Publish"
-        )}
-      </button>
-    </div>
-  </div>
-
-  {/* LIST */}
-  <div className="card shadow border-0">
-    <div className="card-body py-3">
-      <h6 className="mb-3 fw-semibold">Published</h6>
-
-      {loading && <p className="mb-2 small">Loading announcements...</p>}
-
-      {!loading && announcements.length === 0 && (
-        <p className="text-muted small mb-0">No announcements yet</p>
+      {error && (
+        <div className="alert alert-danger py-2 small">{error}</div>
       )}
 
-      <div className="d-flex flex-column gap-2">
-        {announcements.map((announcement) => (
-          <div
-            key={announcement._id}
-            className="border rounded px-3 py-2"
-          >
-            <div className="d-flex justify-content-between align-items-start">
-              
-              <div>
-                <div className="fw-semibold small">
-                  {announcement.title}
-                </div>
-                <div className="text-muted small">
-                  {announcement.message}
-                </div>
-              </div>
+      {/* CREATE */}
+      <div className="card shadow-sm border-0 mb-3">
+        <div className="card-body p-3">
+          <h6 className="mb-2 fw-semibold small">
+            Create Announcement
+          </h6>
 
-              <button
-                className="btn btn-outline-danger btn-sm px-2 py-0"
-                style={{ fontSize: "12px" }}
-                onClick={() =>
-                  dispatch(deleteAnnouncement(announcement._id))
-                }
-              >
-                Delete
-              </button>
-            </div>
-
-            <div className="text-muted" style={{ fontSize: "11px" }}>
-              {new Date(announcement.createdAt).toLocaleDateString()}
-            </div>
+          <div className="mb-2">
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
-        ))}
+
+          <div className="mb-2">
+            <textarea
+              className="form-control form-control-sm"
+              rows="2"
+              placeholder="Message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
+
+          <div className="text-end">
+            <button
+              className="btn btn-primary btn-sm px-3 py-1"
+              onClick={handlePublish}
+              disabled={actionLoading}
+              style={{ fontSize: "12px" }}
+            >
+              {actionLoading ? "Publishing..." : "Publish"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* LIST */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-3">
+          <h6 className="mb-2 fw-semibold small">Published</h6>
+
+          {loading ? (
+            <p className="mb-0 small">Loading...</p>
+          ) : announcements.length === 0 ? (
+            <p className="mb-0 small text-muted">
+              No announcements yet
+            </p>
+          ) : (
+            <div className="d-flex flex-column gap-2">
+              {announcements.map((announcement) => (
+                <div
+                  key={announcement._id}
+                  className="border rounded p-2"
+                >
+                  <div className="d-flex justify-content-between align-items-start">
+                    
+                    {/* Content */}
+                    <div>
+                      <div className="fw-semibold small">
+                        {announcement.title}
+                      </div>
+
+                      <div
+                        className="text-muted small"
+                        style={{ lineHeight: "1.3" }}
+                      >
+                        {announcement.message}
+                      </div>
+                    </div>
+
+                    {/* Delete */}
+                    <button
+                      className="btn btn-sm btn-outline-danger px-2 py-0"
+                      style={{ fontSize: "11px" }}
+                      onClick={() =>
+                        dispatch(deleteAnnouncement(announcement._id))
+                      }
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  {/* Date */}
+                  <div className="text-muted small mt-1">
+                    {new Date(
+                      announcement.createdAt,
+                    ).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-</div>
   );
 };
 

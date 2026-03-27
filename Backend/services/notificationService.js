@@ -36,12 +36,21 @@ const sendLeaveStatusEmail = async ({ email, status, fromDate, toDate }) => {
 const sendAnnouncementEmail = async ({ recipients, title, message }) => {
   if (!recipients.length) return;
 
-  await sendEmail({
-    to: recipients.join(","),
-    subject: `EMS Announcement: ${title}`,
-    text: message,
-    html: `<p>${message}</p>`,
-  });
+  for (const email of recipients) {
+    try {
+      await sendEmail({
+        to: email,
+        subject: `EMS Announcement: ${title}`,
+        text: message,
+        html: `<p>${message}</p>`,
+      });
+    } catch (err) {
+      console.warn(`⚠️ Failed to send email to ${email}`);
+    }
+
+    // delay to avoid rate limit
+    await new Promise((res) => setTimeout(res, 500));
+  }
 };
 
 module.exports = {

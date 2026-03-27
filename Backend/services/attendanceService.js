@@ -111,13 +111,15 @@ const checkIn = async ({ requester }) => {
     await record.save();
   }
 
-  return formatAttendance(record);
+  return formatAttendance(record, policy);
 };
 
 const checkOut = async ({ requester }) => {
   if (!requester.employeeId) {
     throw new AppError("Employee profile not found", 404);
   }
+
+  const policy = await getAttendancePolicy(); // ✅ FIX
 
   const dayStart = getDayStart();
   const dayEnd = getDayEnd();
@@ -136,18 +138,21 @@ const checkOut = async ({ requester }) => {
   }
 
   record.checkOut = new Date();
+  record.autoCheckedOut = false;
+
   const diffMs = record.checkOut.getTime() - record.checkIn.getTime();
+
   record.workingHours = Math.max(
     0,
-    Number((diffMs / (1000 * 60 * 60)).toFixed(2)),
+    Number((diffMs / (1000 * 60 * 60)).toFixed(2))
   );
 
   await record.save();
 
-  return formatAttendance(record);
+  return formatAttendance(record, policy); // ✅ NOW SAFE
 };
 
-const listMyAttendance = async ({ requester, month, page, limit }) => {
+const listMyAttendance = async ({ requester, month, page, limit, status }) => {
   if (!requester.employeeId) {
     throw new AppError("Employee profile not found", 404);
   }
@@ -210,11 +215,27 @@ const listMyAttendance = async ({ requester, month, page, limit }) => {
       current.setDate(current.getDate() + 1);
     }
     allDays.reverse();
+
+    // ✅ APPLY STATUS FILTER
+    
+    
   }
+  let filteredDays = allDays;
+
+  if (status) {
+      if (status === "all_present") {
+        filteredDays = filteredDays.filter((item) =>
+          ["present", "present_late", "present_grace"].includes(item.status),
+        );
+      } else {
+        filteredDays = filteredDays.filter((item) => item.status === status);
+      }
+    }
+
 
   // ✅ apply pagination manually
-  const total = allDays.length;
-  const paginatedData = allDays.slice(skip, skip + l);
+const total = filteredDays.length;
+const paginatedData = filteredDays.slice(skip, skip + l);
 
   return buildPaginationResult({
     data: paginatedData,
@@ -238,14 +259,13 @@ const listAttendanceForEmployee = async ({ employeeId, month }) => {
   }
 
   const records = await Attendance.find(query).sort({ date: -1 });
-  return records.map(formatAttendance);
+  const policy = await getAttendancePolicy();
+  return records.map((r) => formatAttendance(r, policy));
 };
 
 const listAttendanceForAdmin = async ({ filters }) => {
   const { page, limit, skip } = getPagination(filters);
   const shouldPaginate = Boolean(filters.page || filters.limit);
-
-  const status = filters.status ? String(filters.status) : "";
 
   const policy = await getAttendancePolicy();
 
@@ -343,9 +363,14 @@ const listAttendanceForAdmin = async ({ filters }) => {
 
   // 🔥 APPLY STATUS FILTER
   if (filters.status) {
-    merged = merged.filter((item) => item.status === filters.status);
+    if (filters.status === "all_present") {
+      merged = merged.filter((item) =>
+        ["present", "present_late", "present_grace"].includes(item.status),
+      );
+    } else {
+      merged = merged.filter((item) => item.status === filters.status);
+    }
   }
-
   // 🔥 PAGINATION
   const total = merged.length;
 
@@ -366,24 +391,30 @@ function getStatus(record, isAfterOfficeEnd, policy) {
     return isAfterOfficeEnd ? "absent" : "not_checked_in";
   }
 
-  const officeStart = buildTimeForDate(record.date, policy.officeStartTime);
   const officeEnd = buildTimeForDate(record.date, policy.officeEndTime);
 
-  const fullDayHours =
-    (officeEnd.getTime() - officeStart.getTime()) / (1000 * 60 * 60);
+if (record.workingHours < policy.halfDayHours) {
+  return "half_day";
+}
 
-  // ✅ Half Day FIRST
-  if (record.workingHours > 0 && record.workingHours < policy.halfDayHours) {
-    return "half_day";
-  }
-
-  // ✅ Early Leave AFTER
-  if (record.checkOut && record.workingHours < fullDayHours) {
+  // ✅ Early Leave (YOUR RULE)
+  if (
+    record.checkOut &&
+    !record.autoCheckedOut && // 👈 important
+    record.workingHours >= policy.halfDayHours &&
+    record.checkOut < officeEnd
+  ) {
     return "early_leave";
   }
 
-  if (record.checkInStatus === "grace_late") return "grace_late";
-  if (record.checkInStatus === "late") return "late";
+  // ✅ Present types
+  if (record.checkInStatus === "late") {
+    return "present_late";
+  }
+
+  if (record.checkInStatus === "grace_late") {
+    return "present_grace";
+  }
 
   return "present";
 }
@@ -439,29 +470,37 @@ const getAttendanceDashboard = async () => {
     Attendance.find({
       date: { $gte: dayStart, $lte: dayEnd },
       checkIn: { $ne: null },
-    }).select("checkInStatus"),
+    }).select("checkIn checkOut checkInStatus workingHours date"),
   ]);
-
-  const late = records.filter(
-    (record) =>
-      record.checkInStatus === "late" || record.checkInStatus === "grace_late",
-  ).length;
-
-  const present = records.filter(
-    (record) =>
-      record.checkInStatus !== "late" && record.checkInStatus !== "grace_late",
-  ).length;
-
-  const missing = Math.max(0, totalEmployees - records.length);
 
   const isAfterOfficeEnd = now > officeEnd;
 
-  // ✅ AUTO CHECKOUT SAFE
+  let present = 0;
+  let late = 0;
+  let grace = 0;
+
+  records.forEach((record) => {
+    const status = getStatus(record, isAfterOfficeEnd, policy);
+
+    if (
+      status === "present" ||
+      status === "present_late" ||
+      status === "present_grace"
+    ) {
+      present++;
+    }
+
+    if (status === "present_late") late++;
+    if (status === "present_grace") grace++;
+  });
+
+  const missing = Math.max(0, totalEmployees - records.length);
 
   return {
     totalEmployees,
-    present,
-    late,
+    present, // ✅ includes all present types
+    late, // ✅ only late
+    grace, // ✅ optional (you can show later)
     notCheckedIn: isAfterOfficeEnd ? 0 : missing,
     absent: isAfterOfficeEnd ? missing : 0,
   };

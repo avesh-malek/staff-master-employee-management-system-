@@ -30,13 +30,16 @@ const normalizeLeave = (leave) => ({
 });
 
 const createLeave = async ({ payload, requester }) => {
+ 
   if (!requester.employeeId) {
     throw new AppError("Employee profile not found", 404);
   }
 
   const fromDate = new Date(payload.fromDate);
-  const toDate = new Date(payload.toDate);
+  fromDate.setHours(0, 0, 0, 0);
 
+  const toDate = new Date(payload.toDate);
+  toDate.setHours(23, 59, 59, 999);
   if (fromDate > toDate) {
     throw new AppError("Invalid leave dates", 400);
   }
@@ -44,13 +47,10 @@ const createLeave = async ({ payload, requester }) => {
   // Prevent overlapping leave requests
   const existingLeave = await Leave.findOne({
     employee: requester.employeeId,
-    status: { $ne: "rejected" },
-    $or: [
-      {
-        fromDate: { $lte: toDate },
-        toDate: { $gte: fromDate },
-      },
-    ],
+    status: { $in: ["pending", "approved"] },
+
+    fromDate: { $lt: toDate },
+    toDate: { $gt: fromDate },
   });
 
   if (existingLeave) {

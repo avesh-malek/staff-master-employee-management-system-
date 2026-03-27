@@ -88,7 +88,8 @@ const scheduleAutoCheckout = async () => {
 
             record.checkOut = officeEnd;
             record.workingHours = workingHours;
-
+            record.autoCheckedOut = true;
+            
             await record.save();
             updatedCount++;
           }

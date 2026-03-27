@@ -129,14 +129,19 @@ const Dashboard = () => {
           {
             title: "Present",
             value: dashboard.present,
-            color: "success",
-            route: "/admin/attendance?status=present",
+            route: "/admin/attendance?status=all_present", // ✅ FIX
           },
           {
             title: "Late",
             value: dashboard.late,
             color: "warning",
-            route: "/admin/attendance?status=late",
+            route: "/admin/attendance?status=present_late",
+          },
+          {
+            title: "Grace Late",
+            value: dashboard.grace,
+            color: "info",
+            route: "/admin/attendance?status=present_grace",
           },
           {
             title: "Not Checked-In",

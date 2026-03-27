@@ -30,6 +30,12 @@ const attendanceSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    // 🔥 ADD THIS
+    autoCheckedOut: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

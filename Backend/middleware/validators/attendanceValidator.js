@@ -17,17 +17,16 @@ const attendanceAdminListValidation = [
   query("employeeId").optional().isMongoId(),
   query("date").optional().isISO8601(),
   query("department").optional().trim().notEmpty(),
-  query("status")
-    .optional()
-    .isIn([
-      "present",
-      "late",
-      "grace_late",
-      "half_day",
-      "early_leave",
-      "absent",
-      "not_checked_in",
-    ]),
+  query("status").optional().isIn([
+    "present",
+    "present_late",
+    "present_grace",
+    "half_day",
+    "early_leave",
+    "absent",
+    "not_checked_in",
+    "all_present", 
+  ]),
   query("page").optional().isInt({ min: 1 }),
   query("limit").optional().isInt({ min: 1 }),
 ];
@@ -110,7 +109,6 @@ const attendancePolicyValidation = [
     return true;
   }),
 ];
-
 
 module.exports = {
   attendanceEmployeeValidation,

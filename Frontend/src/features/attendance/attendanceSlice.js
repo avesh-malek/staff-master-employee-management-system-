@@ -4,7 +4,7 @@ import { apiRequest } from "../../services/api";
 export const fetchMyAttendance = createAsyncThunk(
   "attendance/fetchMyAttendance",
   async (
-    { month, page = 1, limit = 10 } = {},
+    {  month, page = 1, limit = 10, status } = {},
     { getState, rejectWithValue },
   ) => {
     try {
@@ -12,6 +12,7 @@ export const fetchMyAttendance = createAsyncThunk(
 
       const query = new URLSearchParams();
       if (month) query.set("month", month);
+      if (status) query.set("status", status);
       if (page) {
         query.set("page", page);
         query.set("limit", limit);

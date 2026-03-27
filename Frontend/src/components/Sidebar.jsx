@@ -78,13 +78,13 @@ const Sidebar = ({ role }) => {
           </Link>
         </li>
         <li>
-          <Link to="/employee/attendance" className={navClass("attendance")}>
-            Attendance
+          <Link to="/employee/leave" className={navClass("leave")}>
+            Leave
           </Link>
         </li>
         <li>
-          <Link to="/employee/leave" className={navClass("leave")}>
-            Leave
+          <Link to="/employee/attendance" className={navClass("attendance")}>
+            Attendance
           </Link>
         </li>
         <li>

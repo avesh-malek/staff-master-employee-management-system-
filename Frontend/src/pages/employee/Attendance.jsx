@@ -6,6 +6,7 @@ import {
   fetchMyAttendance,
 } from "../../features/attendance/attendanceSlice";
 import Pagination from "../../components/Pagination";
+import { useSearchParams } from "react-router-dom";
 
 const Attendance = () => {
   const dispatch = useDispatch();
@@ -18,25 +19,26 @@ const Attendance = () => {
   const [month, setMonth] = useState(getCurrentMonth());
   const [page, setPage] = useState(1);
 
-  const {
-    records,
-    loading,
-    actionLoading,
-    error,
-    total,
-    totalPages,
-    limit,
-  } = useSelector((state) => state.attendance);
+  const [searchParams] = useSearchParams();
+
+  const [status, setStatus] = useState(searchParams.get("status") || "");
 
   useEffect(() => {
-    dispatch(fetchMyAttendance({ month, page }));
-  }, [dispatch, month, page]);
+  const urlStatus = searchParams.get("status") || "";
+  setStatus(urlStatus);
+  setPage(1); // reset page when filter changes
+}, [searchParams]);
+
+  const { records, loading, actionLoading, error, total, totalPages, limit } =
+    useSelector((state) => state.attendance);
+
+  useEffect(() => {
+    dispatch(fetchMyAttendance({ month, page, status }));
+  }, [dispatch, month, page, status]);
 
   const todayRecord = useMemo(() => {
     const today = new Date().toDateString();
-    return records.find(
-      (item) => new Date(item.date).toDateString() === today
-    );
+    return records.find((item) => new Date(item.date).toDateString() === today);
   }, [records]);
 
   // ✅ ADD THIS (IMPORTANT)
@@ -152,7 +154,8 @@ const Attendance = () => {
           {isCheckedIn && !isCheckedOut && (
             <div className="alert alert-info py-2 small mt-2">
               <p className="mb-0">
-                Auto checkout is enabled. Only check out if you want early leave or half day.
+                Auto checkout is enabled. Only check out if you want early leave
+                or half day.
               </p>
             </div>
           )}
@@ -175,12 +178,34 @@ const Attendance = () => {
                 }}
               />
             </div>
+            <div className="col-md-3">
+              <label className="form-label small mb-1">Status</label>
+              <select
+                className="form-select form-select-sm"
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">All</option>
+                <option value="all_present">All Present</option>
+                <option value="present">Present</option>
+                <option value="present_late">Present (Late)</option>
+                <option value="present_grace">Present (Grace Late)</option>
+                <option value="half_day">Half Day</option>
+                <option value="early_leave">Early Leave</option>
+                <option value="absent">Absent</option>
+                <option value="not_checked_in">Not Checked-In</option>
+              </select>
+            </div>
 
             <div className="col-md-2 d-flex">
               <button
                 className="btn btn-outline-secondary btn-sm w-100"
                 onClick={() => {
                   setMonth(getCurrentMonth());
+                  setStatus("");
                   setPage(1);
                 }}
               >
@@ -229,28 +254,34 @@ const Attendance = () => {
                         {record.status === "present" && (
                           <span className="badge bg-success">Present</span>
                         )}
-                        {record.status === "late" && (
-                          <span className="badge bg-danger">Late</span>
-                        )}
-                        {record.status === "not_checked_in" && (
-                          <span className="badge bg-secondary">
-                            Not Checked-In
+
+                        {record.status === "present_late" && (
+                          <span className="badge bg-warning text-dark">
+                            Present (Late)
                           </span>
                         )}
+
+                        {record.status === "present_grace" && (
+                          <span className="badge bg-info">
+                            Present (Grace Late)
+                          </span>
+                        )}
+
+                        {record.status === "half_day" && (
+                          <span className="badge bg-primary">Half Day</span>
+                        )}
+
+                        {record.status === "early_leave" && (
+                          <span className="badge bg-warning">Early Leave</span>
+                        )}
+
                         {record.status === "absent" && (
                           <span className="badge bg-dark">Absent</span>
                         )}
-                        {record.status === "grace_late" && (
-                          <span className="badge bg-warning text-dark">
-                            Grace Late
-                          </span>
-                        )}
-                        {record.status === "half_day" && (
-                          <span className="badge bg-info">Half Day</span>
-                        )}
-                        {record.status === "early_leave" && (
-                          <span className="badge bg-warning">
-                            Early Leave
+
+                        {record.status === "not_checked_in" && (
+                          <span className="badge bg-secondary">
+                            Not Checked-In
                           </span>
                         )}
                       </td>
@@ -274,8 +305,7 @@ const Attendance = () => {
           <div className="card-footer bg-white border-0 py-2">
             <div className="d-flex align-items-center justify-content-between">
               <p className="mb-0 small text-muted">
-                Showing{" "}
-                {total === 0 ? 0 : (page - 1) * limit + 1}–
+                Showing {total === 0 ? 0 : (page - 1) * limit + 1}–
                 {total === 0 ? 0 : Math.min(page * limit, total)} of {total}
               </p>
 

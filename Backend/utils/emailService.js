@@ -36,9 +36,13 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
     return true;
   } catch (error) {
-    console.error(error);
-    return false;
+  if (error.responseCode === 550) {
+    console.warn("⚠️ Email rate limit reached (Mailtrap)");
+  } else {
+    console.error("Email error:", error.message);
   }
+  return false;
+}
 };
 
 module.exports = { sendEmail };
