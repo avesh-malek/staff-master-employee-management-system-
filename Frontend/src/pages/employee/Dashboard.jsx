@@ -18,12 +18,13 @@ const Dashboard = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   };
+  const currentMonth = getCurrentMonth();
 
   useEffect(() => {
     dispatch(fetchMyEmployee());
     dispatch(fetchLeaves());
-    dispatch(fetchMyAttendance({ month: getCurrentMonth(), limit: 1000 }));
-  }, [dispatch]);
+    dispatch(fetchMyAttendance({ month: currentMonth, page: 1, limit: 1000 }));
+  }, [dispatch, currentMonth]);
 
   // ✅ CALCULATIONS (IMPORTANT)
   const stats = useMemo(() => {
@@ -35,37 +36,27 @@ const Dashboard = () => {
     let absent = 0;
 
     attendance.forEach((item) => {
-      switch (item.status) {
-        case "present":
-          present++;
-          break;
-        case "present_late":
-          present++;
-          late++;
-          break;
-        case "present_grace":
-          present++;
-          grace++;
-          break;
-        case "half_day":
-          halfDay++;
-          break;
-        case "early_leave":
-          earlyLeave++;
-          break;
-        case "absent":
-          absent++;
-          break;
-        default:
-          break;
+      const base = item.status?.base;
+      const modifiers = item.status?.modifiers || [];
+
+      if (["present", "present_late", "present_grace"].includes(base)) {
+        present++;
       }
+
+      if (base === "present_late") late++;
+      if (base === "present_grace") grace++;
+
+      if (modifiers.includes("half_day")) halfDay++;
+      if (modifiers.includes("early_leave")) earlyLeave++;
+
+      if (base === "absent") absent++;
     });
 
     return { present, late, grace, halfDay, earlyLeave, absent };
   }, [attendance]);
 
   const leavesTaken = leaves.filter(
-    (leave) => leave.status === "approved"
+    (leave) => leave.status === "approved",
   ).length;
 
   return (

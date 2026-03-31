@@ -12,7 +12,7 @@ const badgeClass = (status) => {
 const getDays = (from, to) => {
   const start = new Date(from);
   const end = new Date(to);
-  return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 };
 
 const Leave = () => {

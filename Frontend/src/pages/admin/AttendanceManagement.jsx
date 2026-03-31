@@ -7,6 +7,7 @@ import {
   fetchAttendancePolicy,
 } from "../../features/attendance/attendanceSlice";
 import Pagination from "../../components/Pagination";
+
 const AttendanceManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -51,13 +52,17 @@ const AttendanceManagement = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(
-      fetchAdminAttendance({
-        ...filters,
-        page,
-        limit: 10,
-      }),
-    );
+    const delay = setTimeout(() => {
+      dispatch(
+        fetchAdminAttendance({
+          ...filters,
+          page,
+          limit: 10,
+        }),
+      );
+    }, 200);
+
+    return () => clearTimeout(delay);
   }, [dispatch, filters, page]);
 
   useEffect(() => {
@@ -73,19 +78,12 @@ const AttendanceManagement = () => {
   }, [filters.status, setSearchParams]);
 
   useEffect(() => {
-    if (statusParam) {
-      setFilters((prev) => ({ ...prev, status: statusParam }));
-    }
-  }, []);
-
-  useEffect(() => {
-    const todayNow = new Date().toISOString().split("T")[0];
-
     setFilters((prev) => ({
       ...prev,
-      date: todayNow,
+      status: statusParam || "",
     }));
-  }, []);
+    setPage(1);
+  }, [statusParam]);
 
   const departments = useMemo(() => {
     return [
@@ -100,12 +98,16 @@ const AttendanceManagement = () => {
   };
 
   const clearFilters = () => {
+    const todayNow = new Date().toISOString().split("T")[0];
+
     setFilters({
       employeeId: "",
-      date: today, // ✅ keep today
+      date: todayNow,
       department: "",
       status: "",
     });
+
+    setSearchParams({});
     setPage(1);
   };
 
@@ -254,39 +256,47 @@ const AttendanceManagement = () => {
                       <td>{formatHours(record.workingHours)}</td>
 
                       <td>
-                        {record.status === "present" && (
-                          <span className="badge bg-success">Present</span>
-                        )}
+                        <div className="d-flex flex-wrap gap-1 justify-content-center">
+                          {/* BASE STATUS */}
+                          {record.status?.base === "present" && (
+                            <span className="badge bg-success">Present</span>
+                          )}
 
-                        {record.status === "present_late" && (
-                          <span className="badge bg-warning text-dark">
-                            Present (Late)
-                          </span>
-                        )}
+                          {record.status?.base === "present_late" && (
+                            <span className="badge bg-warning text-dark">
+                              Present (Late)
+                            </span>
+                          )}
 
-                        {record.status === "present_grace" && (
-                          <span className="badge bg-info">
-                            Present (Grace Late)
-                          </span>
-                        )}
+                          {record.status?.base === "present_grace" && (
+                            <span className="badge bg-info">
+                              Present (Grace Late)
+                            </span>
+                          )}
 
-                        {record.status === "half_day" && (
-                          <span className="badge bg-primary">Half Day</span>
-                        )}
+                          {record.status?.base === "absent" && (
+                            <span className="badge bg-dark">Absent</span>
+                          )}
 
-                        {record.status === "early_leave" && (
-                          <span className="badge bg-warning">Early Leave</span>
-                        )}
+                          {record.status?.base === "not_checked_in" && (
+                            <span className="badge bg-secondary">
+                              Not Checked-In
+                            </span>
+                          )}
 
-                        {record.status === "absent" && (
-                          <span className="badge bg-dark">Absent</span>
-                        )}
+                          {/* MODIFIERS */}
+                          {record.status?.modifiers?.includes("half_day") && (
+                            <span className="badge bg-primary">Half Day</span>
+                          )}
 
-                        {record.status === "not_checked_in" && (
-                          <span className="badge bg-secondary">
-                            Not Checked-In
-                          </span>
-                        )}
+                          {record.status?.modifiers?.includes(
+                            "early_leave",
+                          ) && (
+                            <span className="badge bg-warning">
+                              Early Leave
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

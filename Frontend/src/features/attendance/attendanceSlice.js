@@ -166,7 +166,6 @@ const initialState = {
 
   adminTotal: 0,
   adminTotalPages: 1,
-  adminPage: 1,
   adminLimit: 10,
 
   policy: null,
@@ -267,7 +266,7 @@ const attendanceSlice = createSlice({
         state.adminRecords = action.payload.data || [];
         state.adminTotal = action.payload.total ?? 0;
         state.adminTotalPages = action.payload.totalPages ?? 1;
-        state.adminPage = action.payload.currentPage ?? 1;
+
         state.adminLimit = action.meta?.arg?.limit || 10;
       })
       .addCase(fetchAdminAttendance.rejected, (state, action) => {

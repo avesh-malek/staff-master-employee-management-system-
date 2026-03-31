@@ -19,15 +19,15 @@ const Attendance = () => {
   const [month, setMonth] = useState(getCurrentMonth());
   const [page, setPage] = useState(1);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [status, setStatus] = useState(searchParams.get("status") || "");
 
   useEffect(() => {
-  const urlStatus = searchParams.get("status") || "";
-  setStatus(urlStatus);
-  setPage(1); // reset page when filter changes
-}, [searchParams]);
+    const urlStatus = searchParams.get("status") || "";
+    setStatus(urlStatus);
+    setPage(1); // reset page when filter changes
+  }, [searchParams]);
 
   const { records, loading, actionLoading, error, total, totalPages, limit } =
     useSelector((state) => state.attendance);
@@ -36,10 +36,16 @@ const Attendance = () => {
     dispatch(fetchMyAttendance({ month, page, status }));
   }, [dispatch, month, page, status]);
 
-  const todayRecord = useMemo(() => {
-    const today = new Date().toDateString();
-    return records.find((item) => new Date(item.date).toDateString() === today);
-  }, [records]);
+const todayRecord = useMemo(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return records.find((item) => {
+    const d = new Date(item.date);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() === today.getTime();
+  });
+}, [records]);
 
   // ✅ ADD THIS (IMPORTANT)
   const isCheckedIn = Boolean(todayRecord?.checkIn);
@@ -50,7 +56,7 @@ const Attendance = () => {
     const res = await dispatch(checkIn());
 
     if (res.meta.requestStatus === "fulfilled") {
-      dispatch(fetchMyAttendance({ month, page }));
+      dispatch(fetchMyAttendance({ month, page, status }));
     }
   };
 
@@ -61,7 +67,7 @@ const Attendance = () => {
     const res = await dispatch(checkOut());
 
     if (res.meta.requestStatus === "fulfilled") {
-      dispatch(fetchMyAttendance({ month, page }));
+      dispatch(fetchMyAttendance({ month, page, status }));
     }
   };
 
@@ -184,7 +190,9 @@ const Attendance = () => {
                 className="form-select form-select-sm"
                 value={status}
                 onChange={(e) => {
-                  setStatus(e.target.value);
+                  const value = e.target.value;
+                  setStatus(value);
+                  setSearchParams(value ? { status: value } : {});
                   setPage(1);
                 }}
               >
@@ -206,6 +214,7 @@ const Attendance = () => {
                 onClick={() => {
                   setMonth(getCurrentMonth());
                   setStatus("");
+                  setSearchParams({}); // ✅ IMPORTANT
                   setPage(1);
                 }}
               >
@@ -251,35 +260,35 @@ const Attendance = () => {
                       <td>{formatHours(record.workingHours)}</td>
 
                       <td>
-                        {record.status === "present" && (
+                        {record.status?.base === "present" && (
                           <span className="badge bg-success">Present</span>
                         )}
 
-                        {record.status === "present_late" && (
+                        {record.status?.base === "present_late" && (
                           <span className="badge bg-warning text-dark">
                             Present (Late)
                           </span>
                         )}
 
-                        {record.status === "present_grace" && (
+                        {record.status?.base === "present_grace" && (
                           <span className="badge bg-info">
                             Present (Grace Late)
                           </span>
                         )}
 
-                        {record.status === "half_day" && (
+                        {record.status?.modifiers?.includes("half_day") && (
                           <span className="badge bg-primary">Half Day</span>
                         )}
 
-                        {record.status === "early_leave" && (
+                        {record.status?.modifiers?.includes("early_leave") && (
                           <span className="badge bg-warning">Early Leave</span>
                         )}
 
-                        {record.status === "absent" && (
+                        {record.status?.base === "absent" && (
                           <span className="badge bg-dark">Absent</span>
                         )}
 
-                        {record.status === "not_checked_in" && (
+                        {record.status?.base === "not_checked_in" && (
                           <span className="badge bg-secondary">
                             Not Checked-In
                           </span>
