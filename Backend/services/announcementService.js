@@ -17,29 +17,36 @@ const normalizeAnnouncement = (item, requesterId) => ({
   createdBy: item.createdBy,
   createdAt: item.createdAt,
   unread: requesterId
-    ? !item.readBy.some((userId) => userId.toString() === requesterId.toString())
+    ? !item.readBy.some(
+        (userId) => userId.toString() === requesterId.toString(),
+      )
     : false,
 });
 
 const createAnnouncement = async ({ payload, requester }) => {
+
   const announcement = await Announcement.create({
     title: payload.title.trim(),
     message: payload.message.trim(),
     createdBy: requester.id,
   });
-
+  
   const users = await User.find({
     role: "employee",
     employmentStatus: "active",
     deletedAt: null,
   }).select("email");
-
+  
   const recipients = users.map((user) => user.email).filter(Boolean);
-  await sendAnnouncementEmail({
-    recipients,
-    title: announcement.title,
-    message: announcement.message,
-  });
+  // console.log("Recipients:", recipients);
+
+ sendAnnouncementEmail({
+  recipients,
+  title: announcement.title,
+  message: announcement.message,
+}).catch((err) => {
+  console.error("Email error:", err);
+});
 
   return normalizeAnnouncement(announcement, requester.id);
 };
@@ -58,7 +65,7 @@ const markAnnouncementRead = async ({ id, requester }) => {
   }
 
   const alreadyRead = item.readBy.some(
-    (userId) => userId.toString() === requester.id.toString()
+    (userId) => userId.toString() === requester.id.toString(),
   );
 
   if (!alreadyRead) {

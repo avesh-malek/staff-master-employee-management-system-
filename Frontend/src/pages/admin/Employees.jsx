@@ -7,6 +7,7 @@ import {
 } from "../../features/employees/employeeSlice";
 import { toAssetUrl } from "../../services/api";
 import Pagination from "../../components/Pagination";
+import { clearSuccessMessage } from "../../features/employees/employeeSlice";
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff";
@@ -25,6 +26,7 @@ const Employees = () => {
     actionLoading,
     page,
     totalPages,
+    successMessage,
   } = useSelector((state) => state.employees);
 
   const handlePageChange = (newPage) => {
@@ -48,6 +50,16 @@ const Employees = () => {
       return;
     await dispatch(deleteEmployee(id));
   };
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        dispatch(clearSuccessMessage());
+      }, 6000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, dispatch]);
 
   return (
     <div>
@@ -83,6 +95,9 @@ const Employees = () => {
       </div>
 
       {error && <div className="alert alert-danger py-2">{error}</div>}
+      {successMessage && (
+        <div className="alert alert-success py-2">{successMessage}</div>
+      )}
 
       <div className="card shadow border-0">
         <div className="card-body">

@@ -8,7 +8,10 @@ const createEmployee = asyncHandler(async (req, res) => {
     actor: req.user,
   });
 
-  return res.status(201).json(employee);
+  return res.status(201).json({
+    message: "Employee created successfully",
+    data: employee,
+  });
 });
 
 const getEmployees = asyncHandler(async (req, res) => {

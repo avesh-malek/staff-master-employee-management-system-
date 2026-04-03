@@ -3,7 +3,10 @@ import { apiRequest } from "../../services/api";
 
 export const fetchEmployees = createAsyncThunk(
   "employees/fetchEmployees",
-  async ({ page = 1, limit = 10, status } = {}, { getState, rejectWithValue }) => {
+  async (
+    { page = 1, limit = 10, status } = {},
+    { getState, rejectWithValue },
+  ) => {
     try {
       const token = getState().auth.token;
 
@@ -20,7 +23,7 @@ export const fetchEmployees = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error);
     }
-  }
+  },
 );
 
 export const fetchEmployeeById = createAsyncThunk(
@@ -129,6 +132,7 @@ const initialState = {
   actionLoading: false,
   error: null,
   validationErrors: {},
+  successMessage: null,
 };
 
 const employeeSlice = createSlice({
@@ -154,6 +158,9 @@ const employeeSlice = createSlice({
     clearEmployeeErrors: (state) => {
       state.error = null;
       state.validationErrors = {};
+    },
+    clearSuccessMessage: (state) => {
+      state.successMessage = null;
     },
   },
   extraReducers: (builder) => {
@@ -207,10 +214,12 @@ const employeeSlice = createSlice({
         state.actionLoading = true;
         state.error = null;
         state.validationErrors = {};
+        state.successMessage = null;
       })
       .addCase(createEmployee.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.list.unshift(action.payload);
+        state.successMessage = action.payload.message;
+        state.list.unshift(action.payload.data);
       })
       .addCase(createEmployee.rejected, (state, action) => {
         state.actionLoading = false;
@@ -240,11 +249,16 @@ const employeeSlice = createSlice({
         if (state.selected?._id === action.payload) state.selected = null;
       })
       .addCase(uploadMyProfilePicture.fulfilled, (state, action) => {
+        state.actionLoading = false; 
         state.myProfile = action.payload;
       });
   },
 });
 
-export const { clearEmployeeState, clearFieldError, clearEmployeeErrors } =
-  employeeSlice.actions;
+export const {
+  clearEmployeeState,
+  clearFieldError,
+  clearEmployeeErrors,
+  clearSuccessMessage,
+} = employeeSlice.actions;
 export default employeeSlice.reducer;

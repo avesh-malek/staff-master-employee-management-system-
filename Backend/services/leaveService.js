@@ -30,7 +30,6 @@ const normalizeLeave = (leave) => ({
 });
 
 const createLeave = async ({ payload, requester }) => {
- 
   if (!requester.employeeId) {
     throw new AppError("Employee profile not found", 404);
   }
@@ -163,11 +162,13 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
   // ✅ send email safely
   try {
     if (leave.employee?.email) {
-      await sendLeaveStatusEmail({
+      sendLeaveStatusEmail({
         email: leave.employee.email,
         status,
         fromDate: leave.fromDate.toISOString().split("T")[0],
         toDate: leave.toDate.toISOString().split("T")[0],
+      }).catch((err) => {
+        console.error("Email error:", err);
       });
     }
   } catch (error) {

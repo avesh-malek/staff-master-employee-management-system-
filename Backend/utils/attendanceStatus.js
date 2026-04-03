@@ -27,9 +27,10 @@ const getStatus = (record, isAfterOfficeEnd, policy) => {
 
   let modifiers = [];
 
-  if (record.workingHours < policy.halfDayHours) {
-    modifiers.push("half_day");
-  }
+// ✅ APPLY ONLY AFTER CHECKOUT
+if (record.checkOut && record.workingHours < policy.halfDayHours) {
+  modifiers.push("half_day");
+}
 
   if (
     record.checkOut &&

@@ -11,7 +11,12 @@ const { sendPasswordSetupEmail } = require("./notificationService");
 const { deleteFileIfExists } = require("../utils/file");
 const { getPagination, buildPaginationResult } = require("../utils/pagination");
 const toEmployeeCode = (seq) => `EMP${String(seq).padStart(3, "0")}`;
-const EMPLOYMENT_STATUS_VALUES = ["active", "inactive", "terminated", "on_leave"];
+const EMPLOYMENT_STATUS_VALUES = [
+  "active",
+  "inactive",
+  "terminated",
+  "on_leave",
+];
 
 const sanitizeEmployeeInput = (payload) => ({
   name: payload.name?.trim(),
@@ -69,7 +74,10 @@ const createEmployee = async ({ payload, actor }) => {
     throw new AppError("Employee email already exists", 400);
   }
 
-  const existingUser = await User.findOne({ email: data.email, deletedAt: null });
+  const existingUser = await User.findOne({
+    email: data.email,
+    deletedAt: null,
+  });
   if (existingUser) {
     throw new AppError("User email already exists", 400);
   }
@@ -111,10 +119,12 @@ const createEmployee = async ({ payload, actor }) => {
     user.employee = employee._id;
     await user.save();
 
-    await sendPasswordSetupEmail({
+    sendPasswordSetupEmail({
       email: user.email,
       setupToken: rawSetupToken,
       employeeCode,
+    }).catch((err) => {
+      console.error("Email failed:", err);
     });
 
     return employee;
@@ -135,7 +145,7 @@ const listEmployees = async (query) => {
   // FILTER BY STATUS
   if (status) {
     employees = employees.filter(
-      (emp) => emp.user?.employmentStatus === status
+      (emp) => emp.user?.employmentStatus === status,
     );
   }
 
@@ -174,14 +184,16 @@ const getEmployeeById = async (id, requester) => {
 
   const employee = await Employee.findById(id).populate(
     "user",
-    "role employmentStatus"
+    "role employmentStatus",
   );
   if (!employee) {
     throw new AppError("Employee not found", 404);
   }
 
   const isAdminOrHr = ["admin", "hr"].includes(requester.role);
-  const isSelf = requester.employeeId && requester.employeeId.toString() === employee._id.toString();
+  const isSelf =
+    requester.employeeId &&
+    requester.employeeId.toString() === employee._id.toString();
 
   if (!isAdminOrHr && !isSelf) {
     throw new AppError("Forbidden", 403);
@@ -195,7 +207,10 @@ const getMyEmployee = async (requester) => {
     throw new AppError("Employee profile not found", 404);
   }
 
-  const employee = await Employee.findById(requester.employeeId).populate("user", "role employmentStatus");
+  const employee = await Employee.findById(requester.employeeId).populate(
+    "user",
+    "role employmentStatus",
+  );
   if (!employee) {
     throw new AppError("Employee profile not found", 404);
   }
@@ -208,7 +223,7 @@ const updateEmployeeById = async ({ id, payload }) => {
 
   const employee = await Employee.findById(id).populate(
     "user",
-    "role employmentStatus"
+    "role employmentStatus",
   );
   if (!employee) {
     throw new AppError("Employee not found", 404);
@@ -307,21 +322,28 @@ const deleteEmployeeById = async (id) => {
   await employee.deleteOne();
 };
 
-const updateEmployeeProfilePicture = async ({ employeeId, filePath, requester, forceTarget }) => {
+const updateEmployeeProfilePicture = async ({
+  employeeId,
+  filePath,
+  requester,
+  forceTarget,
+}) => {
   const targetEmployeeId = forceTarget || employeeId;
 
   assertObjectId(targetEmployeeId);
 
   const employee = await Employee.findById(targetEmployeeId).populate(
     "user",
-    "role employmentStatus"
+    "role employmentStatus",
   );
   if (!employee) {
     throw new AppError("Employee not found", 404);
   }
 
   if (!forceTarget) {
-    const isSelf = requester.employeeId && requester.employeeId.toString() === employee._id.toString();
+    const isSelf =
+      requester.employeeId &&
+      requester.employeeId.toString() === employee._id.toString();
     if (!isSelf) {
       throw new AppError("Forbidden", 403);
     }

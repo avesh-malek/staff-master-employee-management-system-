@@ -36,6 +36,7 @@ const LeaveRequests = () => {
     searchParams.get("month") || "",
   );
   const [page, setPage] = useState(1);
+  const [loadingId, setLoadingId] = useState(null);
   const {
     requests: leaves,
     loading,
@@ -70,9 +71,14 @@ const LeaveRequests = () => {
   }, [page, totalPages]);
 
   const handleAction = async (id, status) => {
-    await dispatch(updateLeaveStatus({ id, status })).unwrap();
-    dispatch(fetchLeaves({ status: statusFilter, month: monthFilter, page }));
-    dispatch(fetchAdminLeaveUnreadCount());
+    setLoadingId(id);
+
+    try {
+      await dispatch(updateLeaveStatus({ id, status })).unwrap();
+      dispatch(fetchAdminLeaveUnreadCount());
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   const showPagination = total > limit;
@@ -189,7 +195,7 @@ const LeaveRequests = () => {
                                 onClick={() =>
                                   handleAction(leave._id, "approved")
                                 }
-                                disabled={actionLoading}
+                                disabled={loadingId === leave._id}
                               >
                                 Approve
                               </button>
@@ -204,7 +210,7 @@ const LeaveRequests = () => {
                                 onClick={() =>
                                   handleAction(leave._id, "rejected")
                                 }
-                                disabled={actionLoading}
+                                disabled={loadingId === leave._id}
                               >
                                 Reject
                               </button>

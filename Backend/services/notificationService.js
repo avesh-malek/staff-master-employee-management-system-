@@ -1,10 +1,11 @@
 const { sendEmail } = require("../utils/emailService");
+const { enqueueEmail } = require("./emailQueue");
 
 const sendPasswordSetupEmail = async ({ email, setupToken, employeeCode }) => {
   const appBase = process.env.APP_BASE_URL || "http://localhost:5173";
   const url = `${appBase}/set-password/${setupToken}`;
 
-  await sendEmail({
+  enqueueEmail({
     to: email,
     subject: "Set your EMS password",
     text: `Welcome to EMS. Employee Code: ${employeeCode}. Set password here: ${url}`,
@@ -16,16 +17,16 @@ const sendPasswordResetEmail = async ({ email, resetToken }) => {
   const appBase = process.env.APP_BASE_URL || "http://localhost:5173";
   const url = `${appBase}/reset-password/${resetToken}`;
 
-  await sendEmail({
+  enqueueEmail({
     to: email,
     subject: "EMS password reset",
-    text: `Reset your password here: ${url}. This link expires in 15 minutes.`,
-    html: `<p>Reset your password:</p><p><a href="${url}">Reset Password</a></p><p>Expires in 15 minutes.</p>`,
+    text: `Reset your password here: ${url}`,
+    html: `<p><a href="${url}">Reset Password</a></p>`,
   });
 };
 
 const sendLeaveStatusEmail = async ({ email, status, fromDate, toDate }) => {
-  await sendEmail({
+  enqueueEmail({
     to: email,
     subject: `Leave request ${status}`,
     text: `Your leave request (${fromDate} to ${toDate}) was ${status}.`,
@@ -34,23 +35,14 @@ const sendLeaveStatusEmail = async ({ email, status, fromDate, toDate }) => {
 };
 
 const sendAnnouncementEmail = async ({ recipients, title, message }) => {
-  if (!recipients.length) return;
-
-  for (const email of recipients) {
-    try {
-      await sendEmail({
-        to: email,
-        subject: `EMS Announcement: ${title}`,
-        text: message,
-        html: `<p>${message}</p>`,
-      });
-    } catch (err) {
-      console.warn(`⚠️ Failed to send email to ${email}`);
-    }
-
-    // delay to avoid rate limit
-    await new Promise((res) => setTimeout(res, 500));
-  }
+  recipients.forEach((email) => {
+    enqueueEmail({
+      to: email,
+      subject: `EMS Announcement: ${title}`,
+      text: message,
+      html: `<p>${message}</p>`,
+    });
+  });
 };
 
 module.exports = {
