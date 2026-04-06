@@ -5,8 +5,10 @@ import {
   checkOut,
   fetchMyAttendance,
 } from "../../features/attendance/attendanceSlice";
+import { exportMyAttendance } from "../../features/attendanceExport/attendanceExportSlice";
 import Pagination from "../../components/Pagination";
 import { useSearchParams } from "react-router-dom";
+import AttendancePolicyModal from "../../components/AttendancePolicyModal";
 
 const Attendance = () => {
   const dispatch = useDispatch();
@@ -18,54 +20,52 @@ const Attendance = () => {
 
   const [month, setMonth] = useState(getCurrentMonth());
   const [page, setPage] = useState(1);
-
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showPolicy, setShowPolicy] = useState(false);
 
   const [status, setStatus] = useState(searchParams.get("status") || "");
 
   useEffect(() => {
     const urlStatus = searchParams.get("status") || "";
     setStatus(urlStatus);
-    setPage(1); // reset page when filter changes
+    setPage(1);
   }, [searchParams]);
 
   const { records, loading, actionLoading, error, total, totalPages, limit } =
     useSelector((state) => state.attendance);
 
+  const { employeeLoading: exportLoading, error: exportError } = useSelector(
+    (state) => state.attendanceExport
+  );
+
   useEffect(() => {
     dispatch(fetchMyAttendance({ month, page, status }));
   }, [dispatch, month, page, status]);
 
-const todayRecord = useMemo(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayRecord = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  return records.find((item) => {
-    const d = new Date(item.date);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() === today.getTime();
-  });
-}, [records]);
+    return records.find((item) => {
+      const d = new Date(item.date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    });
+  }, [records]);
 
-  // ✅ ADD THIS (IMPORTANT)
   const isCheckedIn = Boolean(todayRecord?.checkIn);
   const isCheckedOut = Boolean(todayRecord?.checkOut);
 
-  // ✅ FIXED
   const onCheckIn = async () => {
     const res = await dispatch(checkIn());
-
     if (res.meta.requestStatus === "fulfilled") {
       dispatch(fetchMyAttendance({ month, page, status }));
     }
   };
 
-  // ✅ FIXED
   const onCheckOut = async () => {
     if (!isCheckedIn) return;
-
     const res = await dispatch(checkOut());
-
     if (res.meta.requestStatus === "fulfilled") {
       dispatch(fetchMyAttendance({ month, page, status }));
     }
@@ -79,68 +79,69 @@ const todayRecord = useMemo(() => {
   };
 
   return (
-    <div>
+    <div className="container-fluid px-0">
+
       {/* HEADER */}
-      <div className="mb-3">
-        <h6 className="fw-semibold text-dark mb-0">My Attendance</h6>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <h6 className="fw-semibold mb-0">My Attendance</h6>
+
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => setShowPolicy(true)}
+          >
+            Policy
+          </button>
+
+          <button
+            className="btn btn-outline-success btn-sm"
+            onClick={() => dispatch(exportMyAttendance({ month, status }))}
+            disabled={exportLoading}
+          >
+            {exportLoading ? "Exporting..." : "Export"}
+          </button>
+        </div>
       </div>
 
-      {/* ✅ ERROR LIKE SETTINGS */}
+      {/* ERRORS */}
       {error && (
-        <div className="alert alert-danger py-2 small">
-          <p className="mb-0">{error}</p>
-        </div>
+        <div className="alert alert-danger py-1 small mb-2">{error}</div>
       )}
 
-      {/* TODAY CARD */}
-      <div className="card shadow border-0 mb-3">
-        <div className="card-body text-center py-3">
-          <h6 className="fw-semibold mb-3">Today</h6>
+      {exportError && (
+        <div className="alert alert-danger py-1 small mb-2">{exportError}</div>
+      )}
+
+      {/* TODAY CARD (COMPACT) */}
+      <div className="card border-0 shadow-sm mb-2">
+        <div className="card-body py-2 text-center">
+
+          <div className="small fw-semibold mb-2">Today</div>
 
           {todayRecord ? (
-            <div className="row g-2 mb-3 small">
-              <div className="col-md-3">
-                <div className="text-muted">Date</div>
-                <div className="fw-semibold">
-                  {new Date(todayRecord.date).toLocaleDateString()}
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="text-muted">Check In</div>
-                <div className="fw-semibold text-success">
-                  {todayRecord.checkIn
-                    ? new Date(todayRecord.checkIn).toLocaleTimeString()
-                    : "-"}
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="text-muted">Check Out</div>
-                <div className="fw-semibold text-warning">
-                  {todayRecord.checkOut
-                    ? new Date(todayRecord.checkOut).toLocaleTimeString()
-                    : "-"}
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="text-muted">Hours</div>
-                <div className="fw-semibold">
-                  {formatHours(todayRecord.workingHours)}
-                </div>
-              </div>
+            <div className="d-flex justify-content-between small text-muted mb-2">
+              <span>{new Date(todayRecord.date).toLocaleDateString()}</span>
+              <span className="text-success">
+                {todayRecord.checkIn
+                  ? new Date(todayRecord.checkIn).toLocaleTimeString()
+                  : "-"}
+              </span>
+              <span className="text-warning">
+                {todayRecord.checkOut
+                  ? new Date(todayRecord.checkOut).toLocaleTimeString()
+                  : "-"}
+              </span>
+              <span>{formatHours(todayRecord.workingHours)}</span>
             </div>
           ) : (
-            <p className="text-muted small mb-3">
-              No attendance record for today
-            </p>
+            <div className="small text-muted mb-2">
+              No record for today
+            </div>
           )}
 
           <div className="d-flex justify-content-center gap-2">
-            {/* ✅ DISABLED LOGIC */}
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-primary btn-sm px-3"
               onClick={onCheckIn}
               disabled={actionLoading || isCheckedIn}
             >
@@ -148,7 +149,7 @@ const todayRecord = useMemo(() => {
             </button>
 
             <button
-              className="btn btn-outline-primary btn-sm"
+              className="btn btn-outline-primary btn-sm px-3"
               onClick={onCheckOut}
               disabled={actionLoading || !isCheckedIn || isCheckedOut}
             >
@@ -156,24 +157,20 @@ const todayRecord = useMemo(() => {
             </button>
           </div>
 
-          {/* ✅ INFO MESSAGE */}
           {isCheckedIn && !isCheckedOut && (
-            <div className="alert alert-info py-2 small mt-2">
-              <p className="mb-0">
-                Auto checkout is enabled. Only check out if you want early leave
-                or half day.
-              </p>
+            <div className="small text-info mt-1">
+              Auto checkout is enabled. Only check out if you want early leave
             </div>
           )}
         </div>
       </div>
 
-      {/* FILTER */}
-      <div className="card shadow border-0 mb-3">
+      {/* FILTER (SMALL) */}
+      <div className="card border-0 shadow-sm mb-2">
         <div className="card-body py-2">
           <div className="row g-2 align-items-end">
+
             <div className="col-md-3">
-              <label className="form-label small mb-1">Month</label>
               <input
                 type="month"
                 className="form-control form-control-sm"
@@ -184,8 +181,8 @@ const todayRecord = useMemo(() => {
                 }}
               />
             </div>
+
             <div className="col-md-3">
-              <label className="form-label small mb-1">Status</label>
               <select
                 className="form-select form-select-sm"
                 value={status}
@@ -208,13 +205,13 @@ const todayRecord = useMemo(() => {
               </select>
             </div>
 
-            <div className="col-md-2 d-flex">
+            <div className="col-md-2">
               <button
                 className="btn btn-outline-secondary btn-sm w-100"
                 onClick={() => {
                   setMonth(getCurrentMonth());
                   setStatus("");
-                  setSearchParams({}); // ✅ IMPORTANT
+                  setSearchParams({});
                   setPage(1);
                 }}
               >
@@ -225,19 +222,21 @@ const todayRecord = useMemo(() => {
         </div>
       </div>
 
-      {/* TABLE (unchanged except status already added) */}
-      <div className="card shadow border-0">
+      {/* TABLE */}
+      <div className="card border-0 shadow-sm">
         <div className="card-body py-2">
+
           {loading ? (
-            <p className="mb-0 small">Loading attendance...</p>
+            <p className="small mb-0">Loading...</p>
           ) : (
             <div className="table-responsive">
-              <table className="table table-bordered table-hover table-sm align-middle text-center">
-                <thead className="table-light">
-                  <tr className="small">
+
+              <table className="table table-sm align-middle text-center mb-0">
+                <thead className="table-light small">
+                  <tr>
                     <th>Date</th>
-                    <th>Check In</th>
-                    <th>Check Out</th>
+                    <th>In</th>
+                    <th>Out</th>
                     <th>Hours</th>
                     <th>Status</th>
                   </tr>
@@ -263,31 +262,25 @@ const todayRecord = useMemo(() => {
                         {record.status?.base === "present" && (
                           <span className="badge bg-success">Present</span>
                         )}
-
                         {record.status?.base === "present_late" && (
                           <span className="badge bg-warning text-dark">
                             Present (Late)
                           </span>
                         )}
-
                         {record.status?.base === "present_grace" && (
                           <span className="badge bg-info">
                             Present (Grace Late)
                           </span>
                         )}
-
                         {record.status?.modifiers?.includes("half_day") && (
                           <span className="badge bg-primary">Half Day</span>
                         )}
-
                         {record.status?.modifiers?.includes("early_leave") && (
                           <span className="badge bg-warning">Early Leave</span>
                         )}
-
                         {record.status?.base === "absent" && (
                           <span className="badge bg-dark">Absent</span>
                         )}
-
                         {record.status?.base === "not_checked_in" && (
                           <span className="badge bg-secondary">
                             Not Checked-In
@@ -299,36 +292,40 @@ const todayRecord = useMemo(() => {
 
                   {records.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-muted py-2 small">
-                        No attendance records found
+                      <td colSpan="5" className="text-muted small py-2">
+                        No records
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+
             </div>
           )}
         </div>
 
         {!loading && (
-          <div className="card-footer bg-white border-0 py-2">
-            <div className="d-flex align-items-center justify-content-between">
-              <p className="mb-0 small text-muted">
-                Showing {total === 0 ? 0 : (page - 1) * limit + 1}–
-                {total === 0 ? 0 : Math.min(page * limit, total)} of {total}
-              </p>
+          <div className="card-footer bg-white py-2 small d-flex justify-content-between">
+            <span>
+              Showing {total === 0 ? 0 : (page - 1) * limit + 1}–
+              {total === 0 ? 0 : Math.min(page * limit, total)} of {total}
+            </span>
 
-              {total > limit && (
-                <Pagination
-                  page={page}
-                  totalPages={totalPages}
-                  onPageChange={(newPage) => setPage(newPage)}
-                />
-              )}
-            </div>
+            {total > limit && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
+            )}
           </div>
         )}
       </div>
+
+      {/* POLICY MODAL */}
+      {showPolicy && (
+        <AttendancePolicyModal onClose={() => setShowPolicy(false)} />
+      )}
     </div>
   );
 };

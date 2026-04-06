@@ -11,11 +11,25 @@ const attendanceMonthValidation = [
   query("month")
     .optional()
     .matches(/^\d{4}-\d{2}$/),
+  query("status").optional().isIn([
+    "present",
+    "present_late",
+    "present_grace",
+    "half_day",
+    "early_leave",
+    "absent",
+    "not_checked_in",
+    "all_present",
+  ]),
+  query("page").optional().isInt({ min: 1 }),
+  query("limit").optional().isInt({ min: 1 }),
 ];
 
 const attendanceAdminListValidation = [
   query("employeeId").optional().isMongoId(),
   query("date").optional().isISO8601(),
+  query("from").optional().isISO8601(),
+  query("to").optional().isISO8601(),
   query("department").optional().trim().notEmpty(),
   query("status").optional().isIn([
     "present",
@@ -29,6 +43,46 @@ const attendanceAdminListValidation = [
   ]),
   query("page").optional().isInt({ min: 1 }),
   query("limit").optional().isInt({ min: 1 }),
+  query("to").custom((value, { req }) => {
+    if (!value || !req.query.from) return true;
+    return new Date(req.query.from) <= new Date(value);
+  }),
+];
+
+const attendanceExportMyValidation = [
+  query("month").optional().matches(/^\d{4}-\d{2}$/),
+  query("status").optional().isIn([
+    "present",
+    "present_late",
+    "present_grace",
+    "half_day",
+    "early_leave",
+    "absent",
+    "not_checked_in",
+    "all_present",
+  ]),
+];
+
+const attendanceExportAdminValidation = [
+  query("employeeId").optional().isMongoId(),
+  query("date").optional().isISO8601(),
+  query("from").optional().isISO8601(),
+  query("to").optional().isISO8601(),
+  query("department").optional().trim().notEmpty(),
+  query("status").optional().isIn([
+    "present",
+    "present_late",
+    "present_grace",
+    "half_day",
+    "early_leave",
+    "absent",
+    "not_checked_in",
+    "all_present",
+  ]),
+  query("to").custom((value, { req }) => {
+    if (!value || !req.query.from) return true;
+    return new Date(req.query.from) <= new Date(value);
+  }),
 ];
 
 const attendancePolicyValidation = [
@@ -114,5 +168,7 @@ module.exports = {
   attendanceEmployeeValidation,
   attendanceMonthValidation,
   attendanceAdminListValidation,
+  attendanceExportMyValidation,
+  attendanceExportAdminValidation,
   attendancePolicyValidation,
 };

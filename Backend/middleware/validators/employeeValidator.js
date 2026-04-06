@@ -1,4 +1,4 @@
-const { body, param } = require("express-validator");
+const { body, param, query } = require("express-validator");
 
 const roles = ["admin", "hr", "employee"];
 const employmentTypes = ["Full-time", "Intern", "Contract"];
@@ -163,8 +163,13 @@ body("email")
 
 const employeeIdParamValidation = [param("id").isMongoId()];
 
+const employeeSearchValidation = [
+  query("q").optional().trim().isLength({ min: 1, max: 100 }),
+];
+
 module.exports = {
   createEmployeeValidation,
   updateEmployeeValidation,
   employeeIdParamValidation,
+  employeeSearchValidation,
 };

@@ -31,6 +31,9 @@ const sanitizeEmployeeInput = (payload) => ({
   role: payload.role === undefined ? undefined : payload.role,
 });
 
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const getPublicEmployee = (employee) => ({
   _id: employee._id,
   employeeCode: employee.employeeCode,
@@ -359,6 +362,31 @@ const updateEmployeeProfilePicture = async ({
   return getPublicEmployee(employee);
 };
 
+const searchEmployees = async (rawQuery) => {
+  const query = String(rawQuery || "").trim();
+
+  if (!query) {
+    return [];
+  }
+
+  const pattern = new RegExp(escapeRegex(query), "i");
+
+  const employees = await Employee.find({
+    $or: [{ name: pattern }, { employeeCode: pattern }],
+  })
+    .select("_id name employeeCode department")
+    .sort({ name: 1 })
+    .limit(10)
+    .lean();
+
+  return employees.map((employee) => ({
+    _id: employee._id,
+    name: employee.name,
+    employeeCode: employee.employeeCode,
+    department: employee.department,
+  }));
+};
+
 module.exports = {
   createEmployee,
   listEmployees,
@@ -367,4 +395,5 @@ module.exports = {
   updateEmployeeById,
   deleteEmployeeById,
   updateEmployeeProfilePicture,
+  searchEmployees,
 };

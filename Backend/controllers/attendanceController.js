@@ -37,6 +37,8 @@ const getAttendanceAdmin = asyncHandler(async (req, res) => {
     filters: {
       employeeId: req.query.employeeId,
       date: req.query.date,
+      from: req.query.from,
+      to: req.query.to,
       department: req.query.department,
       status: req.query.status,
       page: req.query.page,

@@ -79,6 +79,11 @@ const updateEmployeeProfilePictureById = asyncHandler(async (req, res) => {
   return res.status(200).json(employee);
 });
 
+const searchEmployees = asyncHandler(async (req, res) => {
+  const employees = await employeeService.searchEmployees(req.query.q);
+  return res.status(200).json(employees);
+});
+
 module.exports = {
   createEmployee,
   getEmployees,
@@ -88,4 +93,5 @@ module.exports = {
   deleteEmployee,
   updateMyProfilePicture,
   updateEmployeeProfilePictureById,
+  searchEmployees,
 };

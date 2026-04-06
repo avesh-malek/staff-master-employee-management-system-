@@ -80,6 +80,8 @@ export const fetchAdminAttendance = createAsyncThunk(
 
       if (filters.employeeId) query.set("employeeId", filters.employeeId);
       if (filters.date) query.set("date", filters.date);
+      if (filters.from) query.set("from", filters.from);
+      if (filters.to) query.set("to", filters.to);
       if (filters.department) query.set("department", filters.department);
       if (filters.status) query.set("status", filters.status);
       if (filters.page) {

@@ -8,6 +8,7 @@ const {
   deleteEmployee,
   updateMyProfilePicture,
   updateEmployeeProfilePictureById,
+  searchEmployees,
 } = require("../controllers/employeeController");
 const { protect } = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
@@ -16,6 +17,7 @@ const {
   createEmployeeValidation,
   updateEmployeeValidation,
   employeeIdParamValidation,
+  employeeSearchValidation,
 } = require("../middleware/validators/employeeValidator");
 const { profileUpload } = require("../middleware/uploadMiddleware");
 
@@ -32,6 +34,14 @@ employeeRoutes.post(
 
 employeeRoutes.get("/", protect, authorizeRoles("admin", "hr"), getEmployees);
 employeeRoutes.get("/me", protect, getMyEmployee);
+employeeRoutes.get(
+  "/search",
+  protect,
+  authorizeRoles("admin", "hr"),
+  employeeSearchValidation,
+  handleValidationErrors,
+  searchEmployees
+);
 
 employeeRoutes.get(
   "/:id",

@@ -5,12 +5,13 @@ const Employee = require("../models/Employee");
 const AppError = require("../utils/appError");
 const { getPagination, buildPaginationResult } = require("../utils/pagination");
 const { scheduleAutoCheckout } = require("./cronJobs");
+const { getStatus, buildTimeForDate } = require("../utils/attendanceStatus");
+
 const getDayStart = (date = new Date()) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
 };
-const { getStatus,buildTimeForDate } = require("../utils/attendanceStatus");
 
 const getDayEnd = (date = new Date()) => {
   const d = new Date(date);
@@ -18,34 +19,151 @@ const getDayEnd = (date = new Date()) => {
   return d;
 };
 
+const getDateKey = (date) => getDayStart(date).toISOString();
 
+const buildStatusContext = (date, policy) => {
+  const now = new Date();
+  const normalizedDate = getDayStart(date);
+  const officeEnd = buildTimeForDate(normalizedDate, policy.officeEndTime);
+
+  return (
+    getDayStart(normalizedDate) < getDayStart(now) || now > officeEnd
+  );
+};
 
 const getAttendancePolicy = async () => {
   let policy = await AttendancePolicy.findOne();
+
   if (!policy) {
     policy = await AttendancePolicy.create({});
   }
+
   return policy;
 };
 
-const formatAttendance = (record, policy) => {
-  const now = new Date();
-  const officeEnd = buildTimeForDate(record.date, policy.officeEndTime);
+const formatAttendance = (record, policy) => ({
+  _id: record._id,
+  employee: record.employee,
+  date: record.date,
+  checkIn: record.checkIn,
+  checkOut: record.checkOut,
+  checkInStatus: record.checkInStatus,
+  workingHours: record.workingHours,
+  createdAt: record.createdAt,
+  status: getStatus(record, buildStatusContext(record.date, policy), policy),
+});
 
-  const isAfterOfficeEnd =
-    getDayStart(record.date) < getDayStart(now) || now > officeEnd;
+const buildGeneratedAttendance = ({ employee = null, date, policy }) => {
+  const normalizedDate = getDayStart(date);
+  const status = buildStatusContext(normalizedDate, policy)
+    ? { base: "absent", modifiers: [] }
+    : { base: "not_checked_in", modifiers: [] };
 
   return {
-    _id: record._id,
-    employee: record.employee,
-    date: record.date,
-    checkIn: record.checkIn,
-    checkOut: record.checkOut,
-    checkInStatus: record.checkInStatus,
-    workingHours: record.workingHours,
-    createdAt: record.createdAt,
-    status: getStatus(record, isAfterOfficeEnd, policy), // ✅ ADD THIS
+    _id: employee
+      ? `${employee._id}-${getDateKey(normalizedDate)}`
+      : getDateKey(normalizedDate),
+    employee,
+    date: normalizedDate,
+    checkIn: null,
+    checkOut: null,
+    checkInStatus: null,
+    workingHours: 0,
+    createdAt: normalizedDate,
+    status,
   };
+};
+
+const getMonthDateRange = (month) => {
+  const [year, monthIndex] = String(month)
+    .split("-")
+    .map(Number);
+
+  const start = new Date(year, monthIndex - 1, 1);
+  const end = new Date(year, monthIndex, 0, 23, 59, 59, 999);
+
+  return { start, end };
+};
+
+const buildDateList = (start, end) => {
+  const dates = [];
+  const current = getDayStart(start);
+  const finalDay = getDayStart(end);
+
+  while (current <= finalDay) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+};
+
+const matchesStatusFilter = (item, status) => {
+  if (!status) return true;
+
+  if (status === "all_present") {
+    return ["present", "present_late", "present_grace"].includes(
+      item.status?.base,
+    );
+  }
+
+  if (status === "half_day" || status === "early_leave") {
+    return item.status?.modifiers?.includes(status);
+  }
+
+  return item.status?.base === status;
+};
+
+const applyStatusFilter = (records, status) =>
+  records.filter((item) => matchesStatusFilter(item, status));
+
+const getMyAttendanceData = async ({ requester, month, status }) => {
+  if (!requester.employeeId) {
+    throw new AppError("Employee profile not found", 404);
+  }
+
+  const query = { employee: requester.employeeId };
+  let dateRange = null;
+
+  if (month) {
+    dateRange = getMonthDateRange(month);
+    query.date = { $gte: dateRange.start, $lte: dateRange.end };
+  }
+
+  const [dbRecords, policy] = await Promise.all([
+    Attendance.find(query).sort({ date: -1 }),
+    getAttendancePolicy(),
+  ]);
+
+  if (!dateRange) {
+    return applyStatusFilter(
+      dbRecords.map((record) => formatAttendance(record, policy)),
+      status,
+    );
+  }
+
+  const today = getDayEnd(new Date());
+  const effectiveEnd = dateRange.end > today ? today : dateRange.end;
+
+  if (getDayStart(dateRange.start) > getDayStart(effectiveEnd)) {
+    return [];
+  }
+
+  const recordMap = new Map();
+  dbRecords.forEach((record) => {
+    recordMap.set(getDateKey(record.date), record);
+  });
+
+  const records = buildDateList(dateRange.start, effectiveEnd).map((date) => {
+    const existing = recordMap.get(getDateKey(date));
+    return existing
+      ? formatAttendance(existing, policy)
+      : buildGeneratedAttendance({ date, policy });
+  });
+
+  records.reverse();
+
+  return applyStatusFilter(records, status);
 };
 
 const checkIn = async ({ requester }) => {
@@ -56,10 +174,8 @@ const checkIn = async ({ requester }) => {
   const dayStart = getDayStart();
   const dayEnd = getDayEnd();
   const policy = await getAttendancePolicy();
-
   const now = new Date();
 
-  // 🔥 VALIDATION: prevent early check-in
   const officeStart = buildTimeForDate(now, policy.officeStartTime);
   const officeEnd = buildTimeForDate(now, policy.officeEndTime);
 
@@ -71,7 +187,6 @@ const checkIn = async ({ requester }) => {
     throw new AppError("Cannot check in after office hours", 400);
   }
 
-  // 👇 existing logic
   const onTimeLimit = buildTimeForDate(now, policy.onTimeLimit);
   const graceLateLimit = buildTimeForDate(now, policy.graceLateLimit);
 
@@ -113,8 +228,7 @@ const checkOut = async ({ requester }) => {
     throw new AppError("Employee profile not found", 404);
   }
 
-  const policy = await getAttendancePolicy(); // ✅ FIX
-
+  const policy = await getAttendancePolicy();
   const dayStart = getDayStart();
   const dayEnd = getDayEnd();
 
@@ -143,112 +257,25 @@ const checkOut = async ({ requester }) => {
 
   await record.save();
 
-  return formatAttendance(record, policy); // ✅ NOW SAFE
+  return formatAttendance(record, policy);
 };
 
 const listMyAttendance = async ({ requester, month, page, limit, status }) => {
-  if (!requester.employeeId) {
-    throw new AppError("Employee profile not found", 404);
-  }
-
-  const { page: p, limit: l, skip } = getPagination({ page, limit });
-
-  const query = { employee: requester.employeeId };
-
-  let start, end;
-
-  if (month) {
-    const [year, monthIndex] = month.split("-").map(Number);
-    start = new Date(year, monthIndex - 1, 1);
-    end = new Date(year, monthIndex, 0, 23, 59, 59, 999);
-    query.date = { $gte: start, $lte: end };
-  }
-
-  // ✅ fetch existing records
-  const dbRecords = await Attendance.find(query).sort({ date: -1 });
-  const policy = await getAttendancePolicy();
-
-  // ✅ convert to map for fast lookup
-  const recordMap = new Map();
-  dbRecords.forEach((rec) => {
-    recordMap.set(new Date(rec.date).toDateString(), rec);
+  const pagination = getPagination({ page, limit });
+  const records = await getMyAttendanceData({
+    requester,
+    month,
+    status,
   });
-
-  // ✅ generate full month dates
-  const allDays = [];
-  if (start && end) {
-    let current = new Date(start);
-
-    const today = new Date();
-
-    while (current <= end && current <= today) {
-      const key = current.toDateString();
-
-      if (recordMap.has(key)) {
-        allDays.push(formatAttendance(recordMap.get(key), policy));
-      } else {
-        // ✅ MISSING DAY → GENERATE STATUS
-        const today = new Date();
-
-        const isAfterOfficeEnd =
-          getDayStart(current) < getDayStart(today) ||
-          today > buildTimeForDate(current, policy.officeEndTime);
-
-        const status = isAfterOfficeEnd
-          ? { base: "absent", modifiers: [] }
-          : { base: "not_checked_in", modifiers: [] };
-
-        allDays.push({
-          _id: key,
-          date: new Date(current),
-          checkIn: null,
-          checkOut: null,
-          workingHours: 0,
-          status,
-        });
-      }
-
-      current.setDate(current.getDate() + 1);
-    }
-    allDays.reverse();
-
-    // ✅ APPLY STATUS FILTER
-  }
-  let filteredDays = allDays;
-
-  if (status) {
-    if (status === "all_present") {
-      filteredDays = filteredDays.filter((item) =>
-        ["present", "present_late", "present_grace"].includes(
-          item.status?.base,
-        ),
-      );
-    } else if (status === "half_day") {
-      filteredDays = filteredDays.filter((item) =>
-        item.status?.modifiers?.includes("half_day"),
-      );
-    } else if (status === "early_leave") {
-      filteredDays = filteredDays.filter((item) =>
-        item.status?.modifiers?.includes("early_leave"),
-      );
-    } else {
-      filteredDays = filteredDays.filter(
-        (item) => item.status?.base === status,
-      );
-    }
-  }
-
-  // ✅ apply pagination manually
-  const total = filteredDays.length;
-  const paginatedData = filteredDays.slice(skip, skip + l);
 
   return buildPaginationResult({
-    data: paginatedData,
-    total,
-    page: p,
-    limit: l,
+    data: records.slice(pagination.skip, pagination.skip + pagination.limit),
+    total: records.length,
+    page: pagination.page,
+    limit: pagination.limit,
   });
 };
+
 const listAttendanceForEmployee = async ({ employeeId, month }) => {
   if (!mongoose.Types.ObjectId.isValid(employeeId)) {
     throw new AppError("Invalid employee id", 400);
@@ -257,49 +284,77 @@ const listAttendanceForEmployee = async ({ employeeId, month }) => {
   const query = { employee: employeeId };
 
   if (month) {
-    const [year, monthIndex] = month.split("-").map(Number);
-    const start = new Date(year, monthIndex - 1, 1);
-    const end = new Date(year, monthIndex, 0, 23, 59, 59, 999);
-    query.date = { $gte: start, $lte: end };
+    const dateRange = getMonthDateRange(month);
+    query.date = { $gte: dateRange.start, $lte: dateRange.end };
   }
 
-  const records = await Attendance.find(query).sort({ date: -1 });
-  const policy = await getAttendancePolicy();
-  return records.map((r) => formatAttendance(r, policy));
+  const [records, policy] = await Promise.all([
+    Attendance.find(query).sort({ date: -1 }),
+    getAttendancePolicy(),
+  ]);
+
+  return records.map((record) => formatAttendance(record, policy));
 };
 
-const listAttendanceForAdmin = async ({ filters }) => {
-  const { page, limit, skip } = getPagination(filters);
-  const shouldPaginate = Boolean(filters.page || filters.limit);
-
-  const policy = await getAttendancePolicy();
-
-  const targetDate = filters.date ? new Date(filters.date) : new Date();
-  const today = new Date();
-
-  // ✅ BLOCK FUTURE DATE FIRST
-  const todayStart = getDayStart(today);
-  if (getDayStart(targetDate) > todayStart) {
-    return buildPaginationResult({
-      data: [],
-      total: 0,
-      page,
-      limit,
-    });
+const resolveAdminDateRange = (filters = {}) => {
+  if (filters.from && filters.to) {
+    return {
+      start: getDayStart(new Date(filters.from)),
+      end: getDayEnd(new Date(filters.to)),
+      isRange: true,
+    };
   }
 
-  // ✅ OFFICE TIME BASED ON TARGET DATE
-  const officeEndTime = buildTimeForDate(targetDate, policy.officeEndTime);
+  if (filters.date) {
+    const selectedDate = new Date(filters.date);
+    return {
+      start: getDayStart(selectedDate),
+      end: getDayEnd(selectedDate),
+      isRange: false,
+    };
+  }
 
-  // ✅ CHECK PAST DATE
-  const isPastDate = targetDate < todayStart;
+  const today = new Date();
+  return {
+    start: getDayStart(today),
+    end: getDayEnd(today),
+    isRange: false,
+  };
+};
 
-  // ✅ FINAL STATUS DECISION
-  const isAfterOfficeEnd = isPastDate || today > officeEndTime;
+const buildAdminAttendanceRecord = ({ employee, record, date, policy }) => {
+  if (record) {
+    return {
+      _id: record._id,
+      employee: {
+        _id: employee._id,
+        name: employee.name,
+        employeeCode: employee.employeeCode,
+        department: employee.department,
+      },
+      date: record.date,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+      checkInStatus: record.checkInStatus,
+      workingHours: record.workingHours,
+      createdAt: record.createdAt,
+      status: getStatus(record, buildStatusContext(date, policy), policy),
+    };
+  }
 
-  const dayStart = getDayStart(targetDate);
-  const dayEnd = getDayEnd(targetDate);
+  return buildGeneratedAttendance({
+    employee: {
+      _id: employee._id,
+      name: employee.name,
+      employeeCode: employee.employeeCode,
+      department: employee.department,
+    },
+    date,
+    policy,
+  });
+};
 
+const getAdminAttendanceData = async ({ filters = {} }) => {
   if (
     filters.employeeId &&
     !mongoose.Types.ObjectId.isValid(filters.employeeId)
@@ -307,7 +362,20 @@ const listAttendanceForAdmin = async ({ filters }) => {
     throw new AppError("Invalid employee id", 400);
   }
 
-  // 🔥 ALWAYS START FROM EMPLOYEES (FIX)
+  const policy = await getAttendancePolicy();
+  const dateRange = resolveAdminDateRange(filters);
+  const todayEnd = getDayEnd(new Date());
+
+  if (dateRange.start > todayEnd) {
+    return [];
+  }
+
+  const effectiveEnd = dateRange.end > todayEnd ? todayEnd : dateRange.end;
+
+  if (dateRange.start > effectiveEnd) {
+    return [];
+  }
+
   const employeeMatch = {};
 
   if (filters.employeeId) {
@@ -318,94 +386,74 @@ const listAttendanceForAdmin = async ({ filters }) => {
     employeeMatch.department = filters.department.trim();
   }
 
-  // 1. Get all employees
   const employees = await Employee.find(employeeMatch)
     .select("_id name employeeCode department")
-    .sort({ name: 1 });
+    .sort({ name: 1 })
+    .lean();
 
-  // 2. Get attendance for selected date
-const employeeIds = employees.map((emp) => emp._id);
+  if (!employees.length) {
+    return [];
+  }
 
-const attendanceRecords = await Attendance.find({
-  employee: { $in: employeeIds },
-  date: { $gte: dayStart, $lte: dayEnd },
-}).lean();
+  const employeeIds = employees.map((employee) => employee._id);
+  const attendanceRecords = await Attendance.find({
+    employee: { $in: employeeIds },
+    date: { $gte: dateRange.start, $lte: effectiveEnd },
+  }).lean();
 
-  // 3. Map attendance
   const attendanceMap = new Map();
-  attendanceRecords.forEach((att) => {
-    attendanceMap.set(att.employee.toString(), att);
+  attendanceRecords.forEach((record) => {
+    attendanceMap.set(
+      `${record.employee.toString()}::${getDateKey(record.date)}`,
+      record,
+    );
   });
 
-  // 4. Merge employees + attendance
-  let merged = employees.map((emp) => {
-    const record = attendanceMap.get(emp._id.toString());
+  const dateList = buildDateList(dateRange.start, effectiveEnd);
+  const records = [];
 
-    if (record) {
-      return {
-        _id: record._id,
-        employee: emp,
-        date: record.date,
-        checkIn: record.checkIn,
-        checkOut: record.checkOut,
-        checkInStatus: record.checkInStatus,
-        workingHours: record.workingHours,
-        createdAt: record.createdAt,
-        status: getStatus(record, isAfterOfficeEnd, policy),
-      };
-    }
-
-    // 🔥 NO RECORD → STILL RETURN
-    return {
-      _id: `${emp._id}-${dayStart.toISOString()}`,
-      employee: emp,
-      date: dayStart,
-      checkIn: null,
-      checkOut: null,
-      checkInStatus: null,
-      workingHours: 0,
-      createdAt: dayStart,
-      status: isAfterOfficeEnd
-        ? { base: "absent", modifiers: [] }
-        : { base: "not_checked_in", modifiers: [] },
-    };
+  employees.forEach((employee) => {
+    dateList.forEach((date) => {
+      const key = `${employee._id.toString()}::${getDateKey(date)}`;
+      records.push(
+        buildAdminAttendanceRecord({
+          employee,
+          record: attendanceMap.get(key),
+          date,
+          policy,
+        }),
+      );
+    });
   });
 
-  // 🔥 APPLY STATUS FILTER
-  if (filters.status) {
-    if (filters.status === "all_present") {
-      merged = merged.filter((item) =>
-        ["present", "present_late", "present_grace"].includes(
-          item.status?.base,
-        ),
-      );
-    } else if (filters.status === "half_day") {
-      merged = merged.filter((item) =>
-        item.status?.modifiers?.includes("half_day"),
-      );
-    } else if (filters.status === "early_leave") {
-      merged = merged.filter((item) =>
-        item.status?.modifiers?.includes("early_leave"),
-      );
-    } else {
-      merged = merged.filter((item) => item.status?.base === filters.status);
-    }
-  }
-  // 🔥 PAGINATION
-  const total = merged.length;
-
-  if (shouldPaginate) {
-    merged = merged.slice(skip, skip + limit);
-  }
-
-  return buildPaginationResult({
-    data: merged,
-    total,
-    page,
-    limit,
+records.sort((a, b) => {
+  const dateDiff = new Date(a.date) - new Date(b.date);
+    if (dateDiff !== 0) return dateDiff;
+    return String(a.employee?.name || "").localeCompare(
+      String(b.employee?.name || ""),
+    );
   });
+
+  return applyStatusFilter(records, filters.status);
 };
 
+const listAttendanceForAdmin = async ({ filters }) => {
+  const pagination = getPagination(filters);
+  const records = await getAdminAttendanceData({ filters });
+
+  return buildPaginationResult({
+    data:
+      filters.page || filters.limit
+        ? records.slice(
+            pagination.skip,
+            pagination.skip + pagination.limit,
+          )
+        : records,
+    total: records.length,
+    page: pagination.page,
+    limit: pagination.limit,
+  });
+};
 
 const updateAttendancePolicy = async ({ payload }) => {
   const allowedFields = [
@@ -426,6 +474,7 @@ const updateAttendancePolicy = async ({ payload }) => {
 
   if (update.halfDayHours !== undefined) {
     const parsedHours = Number(update.halfDayHours);
+
     if (Number.isNaN(parsedHours)) {
       delete update.halfDayHours;
     } else {
@@ -446,22 +495,20 @@ const updateAttendancePolicy = async ({ payload }) => {
 
 const getAttendanceDashboard = async () => {
   const policy = await getAttendancePolicy();
-  const now = new Date();
-
-  const dayStart = getDayStart(now);
-  const dayEnd = getDayEnd(now);
-
-  const officeEnd = buildTimeForDate(now, policy.officeEndTime);
+  const today = new Date();
+  const dayStart = getDayStart(today);
+  const dayEnd = getDayEnd(today);
+  const officeEnd = buildTimeForDate(today, policy.officeEndTime);
 
   const [totalEmployees, records] = await Promise.all([
     Employee.countDocuments(),
     Attendance.find({
       date: { $gte: dayStart, $lte: dayEnd },
       checkIn: { $ne: null },
-    }).select("checkIn checkOut checkInStatus workingHours date"),
+    }).select("checkIn checkOut checkInStatus workingHours date autoCheckedOut"),
   ]);
 
-  const isAfterOfficeEnd = now > officeEnd;
+  const isAfterOfficeEnd = today > officeEnd;
 
   let present = 0;
   let late = 0;
@@ -471,11 +518,11 @@ const getAttendanceDashboard = async () => {
     const status = getStatus(record, isAfterOfficeEnd, policy);
 
     if (["present", "present_late", "present_grace"].includes(status.base)) {
-      present++;
+      present += 1;
     }
 
-    if (status.base === "present_late") late++;
-    if (status.base === "present_grace") grace++;
+    if (status.base === "present_late") late += 1;
+    if (status.base === "present_grace") grace += 1;
   });
 
   const missing = Math.max(0, totalEmployees - records.length);
@@ -496,6 +543,8 @@ module.exports = {
   listMyAttendance,
   listAttendanceForEmployee,
   listAttendanceForAdmin,
+  getMyAttendanceData,
+  getAdminAttendanceData,
   getAttendancePolicy,
   updateAttendancePolicy,
   getAttendanceDashboard,
