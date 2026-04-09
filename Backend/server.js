@@ -14,6 +14,7 @@ const employeeRoutes = require("./routes/employeeRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
+const payrollRoutes = require("./routes/payrollRoutes");
 const { startCronJobs } = require("./services/cronJobs");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -47,6 +48,7 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/payroll", payrollRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

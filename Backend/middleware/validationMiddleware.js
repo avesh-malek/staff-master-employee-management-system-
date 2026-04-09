@@ -5,13 +5,19 @@ const handleValidationErrors = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     const formattedErrors = {};
+    let firstMessage = null;
 
     errors.array().forEach((error) => {
-      formattedErrors[error.path] = error.msg;  
+      if (error.path) {
+        formattedErrors[error.path] = error.msg;
+      } else {
+        // ✅ global error (like your custom validator)
+        firstMessage = error.msg;
+      }
     });
 
     return res.status(400).json({
-      message: "Validation failed",
+      message: firstMessage || Object.values(formattedErrors)[0] || "Validation failed",
       errors: formattedErrors,
     });
   }

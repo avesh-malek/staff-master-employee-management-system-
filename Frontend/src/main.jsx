@@ -18,12 +18,14 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import EditEmployee from "./pages/admin/EditEmployee";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import AttendanceSettings from "./pages/admin/AttendanceSettings";
+import AdminPayroll from "./pages/payroll/AdminPayroll";
 
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import Profile from "./pages/employee/Profile";
 import Attendance from "./pages/employee/Attendance";
 import Leave from "./pages/employee/Leave";
 import EmployeeAnnouncements from "./pages/employee/EmployeeAnnouncements";
+import EmployeeSalary from "./pages/payroll/EmployeeSalary";
 import NotFound from "./pages/NotFound";
 
 const router = createBrowserRouter([
@@ -110,6 +112,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "admin/payroll",
+        element: (
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminPayroll />
+          </ProtectedRoute>
+        ),
+      },
       
       {
         path: "admin/employees/edit/:id",
@@ -156,6 +166,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["employee"]}>
             <EmployeeAnnouncements />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "employee/salary",
+        element: (
+          <ProtectedRoute allowedRoles={["employee"]}>
+            <EmployeeSalary />
           </ProtectedRoute>
         ),
       },
