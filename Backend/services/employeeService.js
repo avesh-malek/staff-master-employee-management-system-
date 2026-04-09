@@ -93,11 +93,17 @@ const createEmployee = async ({ payload, actor }) => {
 
   const temporaryPassword = await bcrypt.hash(generateRandomToken(), 12);
 
+  let role = data.role || "employee";
+
+  if (actor.role === "hr" && ["admin", "hr"].includes(role)) {
+    throw new AppError("HR cannot assign admin or HR roles", 403);
+  }
+
   const user = await User.create({
     name: data.name,
     email: data.email,
     password: temporaryPassword,
-    role: data.role || "employee",
+    role,
     employmentStatus,
     passwordSetupToken: hashedSetupToken,
     passwordSetupExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -221,7 +227,7 @@ const getMyEmployee = async (requester) => {
   return getPublicEmployee(employee);
 };
 
-const updateEmployeeById = async ({ id, payload }) => {
+const updateEmployeeById = async ({ id, payload, actor }) => {
   assertObjectId(id);
 
   const employee = await Employee.findById(id).populate(
@@ -285,6 +291,11 @@ const updateEmployeeById = async ({ id, payload }) => {
     const user = await User.findById(employee.user);
 
     if (user) {
+      if (payload.role) {
+        if (actor.role === "hr" && ["admin", "hr"].includes(payload.role)) {
+          throw new AppError("HR cannot assign admin or HR roles", 403);
+        }
+      }
       user.name = employee.name;
       user.email = employee.email;
       if (next.role) user.role = next.role;

@@ -12,6 +12,8 @@ const EditEmployee = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
 
+  const { user } = useSelector((state) => state.auth);
+
   const {
     selected: employee,
     loading,
@@ -263,8 +265,13 @@ const EditEmployee = () => {
                   onChange={handleChange}
                 >
                   <option value="employee">Employee</option>
-                  <option value="hr">HR</option>
-                  <option value="admin">Admin</option>
+
+                  {user?.role === "admin" && (
+                    <>
+                      <option value="hr">HR</option>
+                      <option value="admin">Admin</option>
+                    </>
+                  )}
                 </select>
               </div>
 

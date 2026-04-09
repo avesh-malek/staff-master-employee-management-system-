@@ -28,6 +28,8 @@ import EmployeeAnnouncements from "./pages/employee/EmployeeAnnouncements";
 import EmployeeSalary from "./pages/payroll/EmployeeSalary";
 import NotFound from "./pages/NotFound";
 
+import { RoleProvider } from "./context/RoleContex";
+
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
   { path: "/set-password/:token", element: <PasswordSetup /> },
@@ -172,7 +174,7 @@ const router = createBrowserRouter([
       {
         path: "employee/salary",
         element: (
-          <ProtectedRoute allowedRoles={["employee"]}>
+          <ProtectedRoute allowedRoles={["employee","hr"]}>
             <EmployeeSalary />
           </ProtectedRoute>
         ),
@@ -188,6 +190,9 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Provider store={store}>
+    <RoleProvider>
+
     <RouterProvider router={router} />
+    </RoleProvider>
   </Provider>
 );

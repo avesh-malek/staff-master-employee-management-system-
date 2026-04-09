@@ -26,6 +26,7 @@ const AddEmployee = () => {
   const { actionLoading, error, validationErrors } = useSelector(
     (state) => state.employees,
   );
+  const { user } = useSelector((state) => state.auth);
   const [form, setForm] = useState(initialForm);
 
   const handleChange = (event) => {
@@ -214,9 +215,15 @@ const AddEmployee = () => {
                   onChange={handleChange}
                 >
                   <option value="employee">Employee</option>
-                  <option value="hr">HR</option>
-                  <option value="admin">Admin</option>
+
+                  {user?.role === "admin" && (
+                    <>
+                      <option value="hr">HR</option>
+                      <option value="admin">Admin</option>
+                    </>
+                  )}
                 </select>
+
                 {validationErrors?.role && (
                   <div className="invalid-feedback">
                     {validationErrors.role}

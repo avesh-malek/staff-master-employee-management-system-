@@ -13,6 +13,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const { user } = useSelector((state) => state.auth);
+
   const { list: employees } = useSelector((state) => state.employees);
   const { requests: leaves, unreadCount } = useSelector((state) => state.leave);
   const { dashboard } = useSelector((state) => state.attendance);
@@ -62,7 +64,7 @@ const Dashboard = () => {
   return (
     <div className="container-fluid">
       <div className="mb-4">
-        <h4 className="fw-bold mb-1">Admin Dashboard</h4>
+        <h4 className="fw-bold mb-1 text-capitalize">{user?.role} Dashboard</h4>
         <p className="text-muted mb-0" style={{ fontSize: "14px" }}>
           Overview of employees, payroll and leave activity
         </p>

@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
+import { useRole } from "../context/RoleContex";
 
-const Sidebar = ({ role }) => {
+const Sidebar = () => {
   const location = useLocation();
+  const { role, isAdmin, isHR, isEmployee } = useRole();
 
   const path = location.pathname;
 
@@ -19,9 +21,9 @@ const Sidebar = ({ role }) => {
   else if (path.includes("announcements")) active = "announcements";
 
   const navClass = (name) =>
-    `nav-link text-light rounded py-2 ${active === name ? "bg-secondary" : ""}`;
-
-  const showAdminMenu = role === "admin" || role === "hr";
+    `nav-link text-light rounded py-2 ${
+      active === name ? "bg-secondary" : ""
+    }`;
 
   return (
     <div
@@ -33,7 +35,8 @@ const Sidebar = ({ role }) => {
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      {showAdminMenu && (
+      {/* ✅ ADMIN MENU */}
+      {isAdmin && (
         <ul className="nav flex-column w-100 px-3 gap-2">
           <li>
             <Link to="/admin/dashboard" className={navClass("dashboard")}>
@@ -60,11 +63,14 @@ const Sidebar = ({ role }) => {
               Attendance
             </Link>
           </li>
+
+          {/* ✅ ONLY ADMIN */}
           <li>
             <Link to="/admin/payroll" className={navClass("payroll")}>
               Payroll
             </Link>
           </li>
+
           <li>
             <Link
               to="/admin/announcements"
@@ -76,7 +82,55 @@ const Sidebar = ({ role }) => {
         </ul>
       )}
 
-      {role === "employee" && (
+      {/* ✅ HR MENU (separate + own salary) */}
+      {isHR && (
+        <ul className="nav flex-column w-100 px-3 gap-2">
+          <li>
+            <Link to="/admin/dashboard" className={navClass("dashboard")}>
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <Link to="/admin/employees" className={navClass("employees")}>
+              Employees
+            </Link>
+          </li>
+          <li>
+            <Link to="/admin/add-employee" className={navClass("add-employee")}>
+              Add Employee
+            </Link>
+          </li>
+          <li>
+            <Link to="/admin/leaves" className={navClass("leave")}>
+              Leave Requests
+            </Link>
+          </li>
+          <li>
+            <Link to="/admin/attendance" className={navClass("attendance")}>
+              Attendance
+            </Link>
+          </li>
+
+          {/* ✅ HR ONLY OWN SALARY */}
+          <li>
+            <Link to="/employee/salary" className={navClass("payroll")}>
+              My Salary
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/admin/announcements"
+              className={navClass("announcements")}
+            >
+              Announcements
+            </Link>
+          </li>
+        </ul>
+      )}
+
+      {/* ✅ EMPLOYEE MENU */}
+      {isEmployee && (
         <ul className="nav flex-column w-100 px-3 gap-2">
           <li>
             <Link to="/employee/dashboard" className={navClass("dashboard")}>

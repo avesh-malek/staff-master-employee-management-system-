@@ -37,11 +37,11 @@ const updateEmployee = asyncHandler(async (req, res) => {
   const employee = await employeeService.updateEmployeeById({
     id: req.params.id,
     payload: req.body,
+    actor: req.user,
   });
 
   return res.status(200).json(employee);
 });
-
 const deleteEmployee = asyncHandler(async (req, res) => {
   await employeeService.deleteEmployeeById(req.params.id);
   return res.status(200).json({ message: "Employee deleted successfully" });

@@ -27,7 +27,7 @@ const App = () => {
   
       <Navbar />
       <div className="d-flex">
-        <Sidebar role={user?.role} />
+        <Sidebar />
         <div className="p-4 w-100 bg-light" style={{ minHeight: "calc(100vh - 56px)" }}>
           <Outlet />
         </div>
