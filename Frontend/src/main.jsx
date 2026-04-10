@@ -1,6 +1,7 @@
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Provider } from "react-redux";
+import "./index.css";
 
 import store from "./features/store";
 import App from "./App";
@@ -122,7 +123,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      
+
       {
         path: "admin/employees/edit/:id",
         element: (
@@ -174,7 +175,7 @@ const router = createBrowserRouter([
       {
         path: "employee/salary",
         element: (
-          <ProtectedRoute allowedRoles={["employee","hr"]}>
+          <ProtectedRoute allowedRoles={["employee", "hr"]}>
             <EmployeeSalary />
           </ProtectedRoute>
         ),
@@ -191,8 +192,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Provider store={store}>
     <RoleProvider>
-
-    <RouterProvider router={router} />
+      <RouterProvider router={router} />
     </RoleProvider>
-  </Provider>
+  </Provider>,
 );

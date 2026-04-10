@@ -51,44 +51,49 @@ const Navbar = () => {
   const totalUnread =
     user?.role === "admin" ? leaveUnreadCount : announcementUnreadCount;
   return (
-    <nav
-      className="navbar px-4 d-flex justify-content-between"
-      style={{
-        backgroundColor: "#1e293b",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <span className="navbar-brand text-light fw-semibold">EMS</span>
+  <nav className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+    
+    {/* Left */}
+    <span className="text-white font-semibold text-lg tracking-wide">
+      EMS
+    </span>
 
-      <div className="d-flex align-items-center gap-3">
-        <span className="text-light small opacity-75">
-          {user?.name} ({user?.role})
-        </span>
+    {/* Right */}
+    <div className="flex items-center gap-4">
+      
+      <span className="text-slate-300 text-sm">
+        {user?.name} ({user?.role})
+      </span>
 
-        <button
-          className="btn btn-outline-light btn-sm position-relative"
-          onClick={() =>
-            navigate(
-              user?.role === "employee"
-                ? "/employee/announcements"
-                : "/admin/leaves",
-            )
-          }
-        >
-          Notification
-          {totalUnread > 0 && (
-            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              {totalUnread}
-            </span>
-          )}
-        </button>
+      <button
+        onClick={() =>
+          navigate(
+            user?.role === "employee"
+              ? "/employee/announcements"
+              : "/admin/leaves"
+          )
+        }
+        className="relative border border-slate-600 text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition"
+      >
+        🔔
 
-        <button onClick={handleLogout} className="btn btn-outline-light btn-sm">
-          Logout
-        </button>
-      </div>
-    </nav>
-  );
+        {totalUnread > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {totalUnread}
+          </span>
+        )}
+      </button>
+
+      <button
+        onClick={handleLogout}
+        className="border border-slate-600 text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition"
+      >
+        Logout
+      </button>
+
+    </div>
+  </nav>
+);
 };
 
 export default Navbar;

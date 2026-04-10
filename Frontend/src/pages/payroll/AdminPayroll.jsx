@@ -95,19 +95,7 @@ const AdminPayroll = () => {
     };
   }, [dispatch]);
 
-  useEffect(() => {
-    const sectionId =
-      tab === "generate"
-        ? "payroll-generate"
-        : tab === "records"
-          ? "payroll-records"
-          : "payroll-dashboard";
 
-    const target = document.getElementById(sectionId);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [tab]);
 
   const handleGenerate = async () => {
     const [year, month] = period.split("-");

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useRole } from "../context/RoleContex";
 
-const Sidebar = () => {
+const Sidebar = ({}) => {
   const location = useLocation();
   const { role, isAdmin, isHR, isEmployee } = useRole();
 
@@ -21,57 +21,45 @@ const Sidebar = () => {
   else if (path.includes("announcements")) active = "announcements";
 
   const navClass = (name) =>
-    `nav-link text-light rounded py-2 ${
+    `nav-link text-light rounded py-2 px-3 d-block ${
       active === name ? "bg-secondary" : ""
     }`;
-
   return (
-    <div
-      className="d-flex flex-column pt-4"
-      style={{
-        width: "220px",
-        minHeight: "100vh",
-        backgroundColor: "#1e293b",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      {/* ✅ ADMIN MENU */}
+    <div className="w-[210px] min-h-screen bg-slate-900 border-r border-slate-800 pt-6">
+      {/* ADMIN */}
       {isAdmin && (
-        <ul className="nav flex-column w-100 px-3 gap-2">
-          <li>
+        <ul className="flex flex-col px-4 gap-2 w-full">
+          <li className="w-full">
             <Link to="/admin/dashboard" className={navClass("dashboard")}>
               Dashboard
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/employees" className={navClass("employees")}>
               Employees
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/add-employee" className={navClass("add-employee")}>
               Add Employee
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/leaves" className={navClass("leave")}>
               Leave Requests
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/attendance" className={navClass("attendance")}>
               Attendance
             </Link>
           </li>
-
-          {/* ✅ ONLY ADMIN */}
-          <li>
-            <Link to="/admin/payroll" className={navClass("payroll")}>
-              Payroll
-            </Link>
-          </li>
-
-          <li>
+<li className="w-full">
+  <Link to="/admin/payroll" className={navClass("payroll")}>
+    Payroll
+  </Link>
+</li>
+          <li className="w-full">
             <Link
               to="/admin/announcements"
               className={navClass("announcements")}
@@ -82,43 +70,40 @@ const Sidebar = () => {
         </ul>
       )}
 
-      {/* ✅ HR MENU (separate + own salary) */}
+      {/* HR */}
       {isHR && (
-        <ul className="nav flex-column w-100 px-3 gap-2">
-          <li>
+        <ul className="flex flex-col px-4 gap-2 w-full">
+          <li className="w-full">
             <Link to="/admin/dashboard" className={navClass("dashboard")}>
               Dashboard
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/employees" className={navClass("employees")}>
               Employees
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/add-employee" className={navClass("add-employee")}>
               Add Employee
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/leaves" className={navClass("leave")}>
               Leave Requests
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/admin/attendance" className={navClass("attendance")}>
               Attendance
             </Link>
           </li>
-
-          {/* ✅ HR ONLY OWN SALARY */}
-          <li>
+          <li className="w-full">
             <Link to="/employee/salary" className={navClass("payroll")}>
               My Salary
             </Link>
           </li>
-
-          <li>
+          <li className="w-full">
             <Link
               to="/admin/announcements"
               className={navClass("announcements")}
@@ -129,35 +114,35 @@ const Sidebar = () => {
         </ul>
       )}
 
-      {/* ✅ EMPLOYEE MENU */}
+      {/* EMPLOYEE */}
       {isEmployee && (
-        <ul className="nav flex-column w-100 px-3 gap-2">
-          <li>
+        <ul className="flex flex-col px-4 gap-2 w-full">
+          <li className="w-full">
             <Link to="/employee/dashboard" className={navClass("dashboard")}>
               Dashboard
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/employee/profile" className={navClass("profile")}>
               Profile
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/employee/leave" className={navClass("leave")}>
               Leave
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/employee/attendance" className={navClass("attendance")}>
               Attendance
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link to="/employee/salary" className={navClass("payroll")}>
               My Salary
             </Link>
           </li>
-          <li>
+          <li className="w-full">
             <Link
               to="/employee/announcements"
               className={navClass("announcements")}
