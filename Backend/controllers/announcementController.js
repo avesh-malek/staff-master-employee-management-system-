@@ -7,16 +7,23 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     requester: req.user,
   });
 
-  return res.status(201).json(item);
+  return res.status(201).json({
+    message: "Announcement created and email sent to all employees",
+    data: item,
+  });
 });
 
 const getAnnouncements = asyncHandler(async (req, res) => {
-  const items = await announcementService.listAnnouncements({ requester: req.user });
+  const items = await announcementService.listAnnouncements({
+    requester: req.user,
+  });
   return res.status(200).json(items);
 });
 
 const getUnreadCount = asyncHandler(async (req, res) => {
-  const data = await announcementService.getUnreadCount({ requester: req.user });
+  const data = await announcementService.getUnreadCount({
+    requester: req.user,
+  });
   return res.status(200).json(data);
 });
 

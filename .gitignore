@@ -1,5 +1,31 @@
-node_modules
+# ======================
+# GLOBAL
+# ======================
+node_modules/
 .env
-Backend/node_modules
+*.log
+
+# ======================
+# BACKEND
+# ======================
+Backend/node_modules/
 Backend/.env
-Frontend/node_modules
+Backend/uploads/profile/*
+!Backend/uploads/profile/.gitkeep
+
+# ======================
+# FRONTEND
+# ======================
+Frontend/node_modules/
+Frontend/.env
+Frontend/.env.*
+!Frontend/.env.example
+Frontend/dist
+Frontend/dist-ssr
+
+# ======================
+# EDITOR / OS
+# ======================
+.vscode/
+.idea/
+.DS_Store

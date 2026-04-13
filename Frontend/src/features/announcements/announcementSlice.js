@@ -8,9 +8,9 @@ export const fetchAnnouncements = createAsyncThunk(
       const token = getState().auth.token;
       return await apiRequest({ path: "/api/announcements", token });
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error);
     }
-  }
+  },
 );
 
 export const fetchUnreadCount = createAsyncThunk(
@@ -18,11 +18,14 @@ export const fetchUnreadCount = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.token;
-      return await apiRequest({ path: "/api/announcements/unread-count", token });
+      return await apiRequest({
+        path: "/api/announcements/unread-count",
+        token,
+      });
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error);
     }
-  }
+  },
 );
 
 export const addAnnouncement = createAsyncThunk(
@@ -37,9 +40,9 @@ export const addAnnouncement = createAsyncThunk(
         body: { title, message },
       });
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error);
     }
-  }
+  },
 );
 
 export const markAnnouncementRead = createAsyncThunk(
@@ -53,9 +56,9 @@ export const markAnnouncementRead = createAsyncThunk(
         token,
       });
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error);
     }
-  }
+  },
 );
 
 export const deleteAnnouncement = createAsyncThunk(
@@ -63,12 +66,17 @@ export const deleteAnnouncement = createAsyncThunk(
   async (id, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.token;
-      await apiRequest({ path: `/api/announcements/${id}`, method: "DELETE", token });
-      return id;
+      const res = await apiRequest({
+        path: `/api/announcements/${id}`,
+        method: "DELETE",
+        token,
+      });
+
+      return { id, message: res.message };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error);
     }
-  }
+  },
 );
 
 const initialState = {
@@ -77,6 +85,7 @@ const initialState = {
   loading: false,
   actionLoading: false,
   error: null,
+  successMessage: null,
 };
 
 const announcementSlice = createSlice({
@@ -89,6 +98,9 @@ const announcementSlice = createSlice({
       state.loading = false;
       state.actionLoading = false;
       state.error = null;
+    },
+    clearSuccessMessage: (state) => {
+      state.successMessage = null;
     },
   },
   extraReducers: (builder) => {
@@ -103,7 +115,10 @@ const announcementSlice = createSlice({
       })
       .addCase(fetchAnnouncements.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to fetch announcements";
+        state.error =
+          action.payload?.message ||
+          action.payload ||
+          "Failed to fetch announcements";
       })
       .addCase(fetchUnreadCount.fulfilled, (state, action) => {
         state.unreadCount = action.payload.unreadCount || 0;
@@ -114,21 +129,32 @@ const announcementSlice = createSlice({
       })
       .addCase(addAnnouncement.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.list.unshift(action.payload);
+        state.error = null;
+        state.successMessage = action.payload.message;
+        state.list.unshift(action.payload.data);
       })
       .addCase(addAnnouncement.rejected, (state, action) => {
         state.actionLoading = false;
-        state.error = action.payload || "Failed to create announcement";
+        state.error =
+          action.payload?.message ||
+          action.payload ||
+          "Failed to create announcement";
       })
       .addCase(markAnnouncementRead.fulfilled, (state, action) => {
-        const idx = state.list.findIndex((item) => item._id === action.payload._id);
+        const idx = state.list.findIndex(
+          (item) => item._id === action.payload._id,
+        );
         if (idx >= 0) state.list[idx] = action.payload;
       })
       .addCase(deleteAnnouncement.fulfilled, (state, action) => {
-        state.list = state.list.filter((item) => item._id !== action.payload);
+        state.list = state.list.filter(
+          (item) => item._id !== action.payload.id,
+        );
+        state.successMessage = action.payload.message;
       });
   },
 });
 
-export const { clearAnnouncementState } = announcementSlice.actions;
+export const { clearAnnouncementState, clearSuccessMessage } =
+  announcementSlice.actions;
 export default announcementSlice.reducer;

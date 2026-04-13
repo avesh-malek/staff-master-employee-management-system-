@@ -1,0 +1,71 @@
+.dashboard-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+
+/* Soft inner light */
+.dashboard-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.6), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Glow border */
+.dashboard-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(120deg, transparent, rgba(0,123,255,0.3), transparent);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Hover = premium feel */
+.dashboard-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Activate effects */
+.dashboard-card:hover::before {
+  opacity: 1;
+}
+
+.dashboard-card:hover::after {
+  opacity: 1;
+}
+
+/* Number animation */
+.card-value {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover .card-value {
+  transform: scale(1.1);
+  letter-spacing: 0.5px;
+}
+
+/* Title polish */
+.dashboard-card h6 {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover h6 {
+  color: #000;
+  letter-spacing: 0.4px;
+}

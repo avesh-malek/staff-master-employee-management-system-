@@ -97,17 +97,17 @@ const Dashboard = () => {
             route: null,
           },
         ].map((card, index) => (
-          <div className="col-md-3" key={index}>
+          <div className="col" key={index}>
             <div
-              className="card border-0 shadow-sm h-100"
+              className="card border-0 shadow-sm h-100 dashboard-card"
               style={{ cursor: card.route ? "pointer" : "default" }}
               onClick={() => card.route && navigate(card.route)}
             >
-              <div className="card-body">
+              <div className="card-body d-flex flex-column justify-content-between">
                 <h6 className="text-muted mb-2" style={{ fontSize: "13px" }}>
                   {card.title}
                 </h6>
-                <h3 className={`fw-bold text-${card.color} mb-0`}>
+                <h3 className={`fw-bold text-${card.color} mb-0 card-value`}>
                   {card.value}
                 </h3>
               </div>
@@ -160,15 +160,15 @@ const Dashboard = () => {
         ].map((card, index) => (
           <div className="col" key={`attendance-${index}`}>
             <div
-              className="card border-0 shadow-sm h-100"
+              className="card border-0 shadow-sm h-100 dashboard-card"
               style={{ cursor: card.route ? "pointer" : "default" }}
               onClick={() => card.route && navigate(card.route)}
             >
-              <div className="card-body">
+              <div className="card-body d-flex flex-column justify-content-between">
                 <h6 className="text-muted mb-2" style={{ fontSize: "13px" }}>
                   {card.title}
                 </h6>
-                <h3 className={`fw-bold text-${card.color} mb-0`}>
+                <h3 className={`fw-bold text-${card.color} mb-0 card-value`}>
                   {card.value}
                 </h3>
               </div>

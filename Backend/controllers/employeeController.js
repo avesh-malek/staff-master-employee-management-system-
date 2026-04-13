@@ -9,7 +9,7 @@ const createEmployee = asyncHandler(async (req, res) => {
   });
 
   return res.status(201).json({
-    message: "Employee created successfully",
+    message: `Employee created. Setup email sent to ${employee.email}`,
     data: employee,
   });
 });

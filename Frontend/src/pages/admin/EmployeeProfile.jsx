@@ -51,7 +51,7 @@ const EmployeeProfile = () => {
             : "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"
         }
         alt={employee.name}
-        className="rounded-circle mb-2"
+className="rounded-circle mb-2 d-block mx-auto"
         style={{
           width: "140px",   // 🔥 increased size
           height: "140px",

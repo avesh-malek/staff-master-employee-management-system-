@@ -38,7 +38,6 @@ const createAnnouncement = async ({ payload, requester }) => {
   }).select("email");
   
   const recipients = users.map((user) => user.email).filter(Boolean);
-  // console.log("Recipients:", recipients);
 
  sendAnnouncementEmail({
   recipients,

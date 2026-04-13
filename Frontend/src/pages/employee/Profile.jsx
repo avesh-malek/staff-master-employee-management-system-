@@ -7,16 +7,21 @@ import {
 import { toAssetUrl } from "../../services/api";
 
 const getStatusMeta = (status) => {
-  if (status === "inactive") return { label: "Inactive", badge: "bg-warning text-dark" };
-  if (status === "terminated") return { label: "Terminated", badge: "bg-danger" };
-  if (status === "on_leave") return { label: "On Leave", badge: "bg-info text-dark" };
+  if (status === "inactive")
+    return { label: "Inactive", badge: "bg-warning text-dark" };
+  if (status === "terminated")
+    return { label: "Terminated", badge: "bg-danger" };
+  if (status === "on_leave")
+    return { label: "On Leave", badge: "bg-info text-dark" };
   return { label: "Active", badge: "bg-success" };
 };
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { myProfile, actionLoading, error } = useSelector((state) => state.employees);
+  const { myProfile, actionLoading, error } = useSelector(
+    (state) => state.employees,
+  );
 
   const [file, setFile] = useState(null);
 
@@ -34,7 +39,6 @@ const Profile = () => {
 
   return (
     <div className="container-fluid">
-
       {/* HEADER */}
       <div className="mb-4">
         <h4 className="fw-bold mb-1">My Profile</h4>
@@ -43,16 +47,11 @@ const Profile = () => {
         </p>
       </div>
 
-      {error && (
-        <div className="alert alert-danger py-2 small">
-          {error}
-        </div>
-      )}
+      {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
       {/* PROFILE CARD */}
       <div className="card shadow border-0 mb-4">
         <div className="card-body text-center py-4">
-
           <img
             src={
               myProfile?.profilePic
@@ -60,7 +59,7 @@ const Profile = () => {
                 : "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff"
             }
             alt="Profile"
-            className="rounded-circle mb-3"
+            className="rounded-circle mb-3 d-block mx-auto"
             style={{
               width: "130px",
               height: "130px",
@@ -68,17 +67,14 @@ const Profile = () => {
             }}
           />
 
-          <h5 className="fw-semibold mb-1">
-            {myProfile?.name || user?.name}
-          </h5>
+          <h5 className="fw-semibold mb-1">{myProfile?.name || user?.name}</h5>
 
           <div className="text-muted small mb-2">
-            {myProfile?.designation || user?.role} • {myProfile?.department || "-"}
+            {myProfile?.designation || user?.role} •{" "}
+            {myProfile?.department || "-"}
           </div>
 
-          <span className={`badge ${status.badge}`}>
-            {status.label}
-          </span>
+          <span className={`badge ${status.badge}`}>{status.label}</span>
 
           {/* UPLOAD */}
           <div className="mt-3 d-flex justify-content-center gap-2 flex-wrap">
@@ -103,7 +99,6 @@ const Profile = () => {
 
       {/* DETAILS */}
       <div className="row g-4">
-
         {/* PERSONAL */}
         <div className="col-md-6">
           <div className="card shadow border-0 h-100">
@@ -119,16 +114,12 @@ const Profile = () => {
 
               <div className="small mb-3">
                 <div className="text-muted">Phone</div>
-                <div className="fw-semibold">
-                  {myProfile?.phone || "-"}
-                </div>
+                <div className="fw-semibold">{myProfile?.phone || "-"}</div>
               </div>
 
               <div className="small">
                 <div className="text-muted">Address</div>
-                <div className="fw-semibold">
-                  {myProfile?.address || "-"}
-                </div>
+                <div className="fw-semibold">{myProfile?.address || "-"}</div>
               </div>
             </div>
           </div>
@@ -149,9 +140,7 @@ const Profile = () => {
 
               <div className="small mb-3">
                 <div className="text-muted">Role</div>
-                <div className="fw-semibold">
-                  {myProfile?.role || "-"}
-                </div>
+                <div className="fw-semibold">{myProfile?.role || "-"}</div>
               </div>
 
               <div className="small mb-3">
@@ -181,7 +170,6 @@ const Profile = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
