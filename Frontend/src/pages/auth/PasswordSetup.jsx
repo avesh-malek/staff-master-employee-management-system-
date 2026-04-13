@@ -21,10 +21,10 @@ const PasswordSetup = () => {
     event.preventDefault();
     setError(null);
 
-    if (password.length < 8 || password !== confirmPassword) {
-      setError("Password validation failed");
-      return;
-    }
+if (password !== confirmPassword) {
+  setError("Passwords do not match");
+  return;
+}
 
     try {
       setLoading(true);

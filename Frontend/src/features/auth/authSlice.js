@@ -17,9 +17,9 @@ export const loginUser = createAsyncThunk(
 
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
-  }
+  },
 );
 
 export const fetchCurrentUser = createAsyncThunk(
@@ -40,9 +40,9 @@ export const fetchCurrentUser = createAsyncThunk(
 
       return { user, token };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
-  }
+  },
 );
 
 export const forgotPassword = createAsyncThunk(
@@ -56,9 +56,11 @@ export const forgotPassword = createAsyncThunk(
       });
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+return rejectWithValue(
+  error.response?.data?.message || error.message
+);
     }
-  }
+  },
 );
 
 const initialState = {

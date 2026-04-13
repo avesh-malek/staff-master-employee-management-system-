@@ -128,12 +128,14 @@ const createEmployee = async ({ payload, actor }) => {
     user.employee = employee._id;
     await user.save();
 
-    sendPasswordSetupEmail({
-      email: user.email,
-      setupToken: rawSetupToken,
-      employeeCode,
-    }).catch((err) => {
-      console.error("Email failed:", err);
+    process.nextTick(() => {
+      sendPasswordSetupEmail({
+        email: user.email,
+        setupToken: rawSetupToken,
+        employeeCode,
+      }).catch((err) => {
+        console.error("Email failed:", err);
+      });
     });
 
     return employee;

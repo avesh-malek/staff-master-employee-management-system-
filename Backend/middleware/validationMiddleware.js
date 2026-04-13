@@ -4,25 +4,18 @@ const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    const formattedErrors = {};
-    let firstMessage = null;
-
-    errors.array().forEach((error) => {
-      if (error.path) {
-        formattedErrors[error.path] = error.msg;
-      } else {
-        // ✅ global error (like your custom validator)
-        firstMessage = error.msg;
-      }
-    });
+    const errorArray = errors.array();
 
     return res.status(400).json({
-      message: firstMessage || Object.values(formattedErrors)[0] || "Validation failed",
-      errors: formattedErrors,
+      message: errorArray[0].msg, // first error (clean UX)
+      errors: errorArray.map((e) => ({
+        field: e.path,
+        message: e.msg,
+      })),
     });
   }
 
-  return next();
+  next();
 };
 
 module.exports = {

@@ -1,10 +1,29 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const AppError = require("../utils/appError");
-const { generateRandomToken, hashToken, signAccessToken } = require("../utils/token");
 const {
-  sendPasswordResetEmail,
-} = require("./notificationService");
+  generateRandomToken,
+  hashToken,
+  signAccessToken,
+} = require("../utils/token");
+const { sendPasswordResetEmail } = require("./notificationService");
+
+const validatePasswordStrength = (password) => {
+  if (password.length < 8)
+    throw new AppError("Password must be at least 8 characters", 400);
+
+  if (!/[A-Z]/.test(password))
+    throw new AppError("Password must contain uppercase letter", 400);
+
+  if (!/[a-z]/.test(password))
+    throw new AppError("Password must contain lowercase letter", 400);
+
+  if (!/[0-9]/.test(password))
+    throw new AppError("Password must contain number", 400);
+
+  if (!/[^A-Za-z0-9]/.test(password))
+    throw new AppError("Password must contain special character", 400);
+};
 
 const isProduction = () => process.env.NODE_ENV === "production";
 
@@ -54,7 +73,10 @@ const login = async ({ email, password }) => {
   }
 
   if (user.employmentStatus !== "active") {
-    throw new AppError("Your account is not active. Please contact admin.", 403);
+    throw new AppError(
+      "Your account is not active. Please contact admin.",
+      403,
+    );
   }
 
   user.lastLoginAt = new Date();
@@ -87,6 +109,7 @@ const forgotPassword = async ({ email }) => {
   const user = await User.findOne({ email: normalizedEmail, deletedAt: null });
 
   if (!user) {
+    await new Promise((resolve) => setTimeout(resolve, 500)); 
     return;
   }
 
@@ -106,6 +129,7 @@ const applyNewPassword = async ({ user, password }) => {
 };
 
 const resetPassword = async ({ token, password }) => {
+  await validatePasswordStrength(password);
   const hashed = hashToken(token);
 
   const user = await User.findOne({
@@ -133,6 +157,7 @@ const resetPassword = async ({ token, password }) => {
 };
 
 const setPasswordFromSetupToken = async ({ token, password }) => {
+  await validatePasswordStrength(password);
   const hashed = hashToken(token);
 
   const user = await User.findOne({
@@ -160,7 +185,10 @@ const setPasswordFromSetupToken = async ({ token, password }) => {
 };
 
 const bootstrapAdmin = async ({ name, email, password, setupKey }) => {
-  if (!process.env.ADMIN_SETUP_KEY || setupKey !== process.env.ADMIN_SETUP_KEY) {
+  if (
+    !process.env.ADMIN_SETUP_KEY ||
+    setupKey !== process.env.ADMIN_SETUP_KEY
+  ) {
     throw new AppError("Unauthorized", 401);
   }
 
@@ -169,7 +197,7 @@ const bootstrapAdmin = async ({ name, email, password, setupKey }) => {
   if (existingAdmin) {
     throw new AppError("Admin already exists", 400);
   }
-
+  await validatePasswordStrength(password);
   const hashedPassword = await bcrypt.hash(password, 12);
 
   const user = await User.create({

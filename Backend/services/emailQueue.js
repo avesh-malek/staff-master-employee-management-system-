@@ -4,6 +4,10 @@ const queue = [];
 let isProcessing = false;
 
 const processQueue = async () => {
+  if (queue.length === 0) {
+    isProcessing = false;
+    return;
+  }
   if (isProcessing) return;
   isProcessing = true;
 
@@ -23,9 +27,14 @@ const processQueue = async () => {
   isProcessing = false;
 };
 
-const enqueueEmail = (emailData) => {
-  queue.push(emailData);
-  processQueue(); // trigger worker
+const enqueueEmail = async (emailData) => {
+  process.nextTick(async () => {
+    try {
+      await sendEmail(emailData);
+    } catch (err) {
+      console.error("Email failed:", err);
+    }
+  });
 };
 
 module.exports = { enqueueEmail };
