@@ -167,8 +167,6 @@ const updateLeaveStatus = async ({ id, status, requester }) => {
         status,
         fromDate: leave.fromDate.toISOString().split("T")[0],
         toDate: leave.toDate.toISOString().split("T")[0],
-      }).catch((err) => {
-        console.error("Email error:", err);
       });
     }
   } catch (error) {

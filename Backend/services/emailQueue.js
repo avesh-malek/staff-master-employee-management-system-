@@ -16,15 +16,20 @@ const processQueue = async () => {
       console.error("Email failed:", err.message);
     }
 
-    await new Promise((res) => setTimeout(res, 1500)); // small delay
+    await new Promise((res) => setTimeout(res, 1000));
   }
 
   isProcessing = false;
 };
 
+// 🔥 IMPORTANT FIX
 const enqueueEmail = (emailData) => {
   queue.push(emailData);
-  processQueue();
+
+  // ALWAYS trigger processing safely
+  if (!isProcessing) {
+    processQueue();
+  }
 };
 
 module.exports = { enqueueEmail };
