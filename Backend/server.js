@@ -26,13 +26,27 @@ app.use(
     crossOriginResourcePolicy: {
       policy: "cross-origin",
     },
-  })
+  }),
 );
+const allowedOrigins = [
+  "https://staff-master-employee-management-system.vercel.app",
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || true,
+    origin: (origin, callback) => {
+      if (
+        !origin || // Postman / server-to-server
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json({ limit: "10kb" }));
@@ -58,7 +72,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
-     await startCronJobs()
+    await startCronJobs();
 
     app.listen(PORT);
   } catch (error) {
