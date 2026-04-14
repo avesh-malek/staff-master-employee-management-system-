@@ -3,8 +3,7 @@ const { enqueueEmail } = require("./emailQueue");
 
 const sendPasswordSetupEmail = async ({ email, setupToken, employeeCode }) => {
   const appBase = process.env.APP_BASE_URL || "http://localhost:5173";
-  const url = `${appBase}/set-password/${setupToken}`;
-
+  const url = `${appBase}/#/set-password/${setupToken}`;
   enqueueEmail({
     to: email,
     subject: "Set your EMS password",
@@ -15,7 +14,8 @@ const sendPasswordSetupEmail = async ({ email, setupToken, employeeCode }) => {
 
 const sendPasswordResetEmail = async ({ email, resetToken }) => {
   const appBase = process.env.APP_BASE_URL || "http://localhost:5173";
-  const url = `${appBase}/reset-password/${resetToken}`;
+  
+  const url = `${appBase}/#/reset-password/${resetToken}`;
 
   enqueueEmail({
     to: email,
