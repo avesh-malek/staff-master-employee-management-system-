@@ -1,5 +1,5 @@
 const { sendEmail } = require("../utils/emailService");
-const { baseTemplate } = require("./templates/emailTemplates");
+const { baseTemplate } = require("../templates/emailTemplate");
 const { enqueueEmail } = require("./emailQueue");
 
 const sendPasswordSetupEmail = async ({ email, setupToken, employeeCode }) => {
