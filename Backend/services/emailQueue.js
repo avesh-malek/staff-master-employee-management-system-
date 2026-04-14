@@ -4,10 +4,6 @@ const queue = [];
 let isProcessing = false;
 
 const processQueue = async () => {
-  if (queue.length === 0) {
-    isProcessing = false;
-    return;
-  }
   if (isProcessing) return;
   isProcessing = true;
 
@@ -20,21 +16,15 @@ const processQueue = async () => {
       console.error("Email failed:", err.message);
     }
 
-    // ⏱ delay (avoid rate limit)
-    await new Promise((res) => setTimeout(res, 2000));
+    await new Promise((res) => setTimeout(res, 1500)); // small delay
   }
 
   isProcessing = false;
 };
 
-const enqueueEmail = async (emailData) => {
-  process.nextTick(async () => {
-    try {
-      await sendEmail(emailData);
-    } catch (err) {
-      console.error("Email failed:", err);
-    }
-  });
+const enqueueEmail = (emailData) => {
+  queue.push(emailData);
+  processQueue();
 };
 
 module.exports = { enqueueEmail };
