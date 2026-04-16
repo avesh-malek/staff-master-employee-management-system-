@@ -6,19 +6,21 @@ const { buildTimeForDate } = require("../utils/attendanceStatus");
 
 let autoCheckoutJob = null; // 🔥 store current job
 
-// helpers
+// ✅ FIX — IST-aware (same as attendanceService.js)
+const toIST = (date = new Date()) => {
+  const utcMs = new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000;
+  return new Date(utcMs + 5.5 * 60 * 60000);
+};
+
 const getDayStart = (date = new Date()) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const ist = toIST(date);
+  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), -5, -30, 0, 0));
 };
 
 const getDayEnd = (date = new Date()) => {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
+  const ist = toIST(date);
+  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), 18, 29, 59, 999));
 };
-
 
 
 // 🔥 MAIN FUNCTION

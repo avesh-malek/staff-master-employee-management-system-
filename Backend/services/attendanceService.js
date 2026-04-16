@@ -8,19 +8,24 @@ const { scheduleAutoCheckout } = require("./cronJobs");
 const { getStatus, buildTimeForDate } = require("../utils/attendanceStatus");
 
 const toIST = (date = new Date()) => {
-  const utcMs = new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000;
+  const utcMs =
+    new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000;
   return new Date(utcMs + 5.5 * 60 * 60000);
 };
 
 const getDayStart = (date = new Date()) => {
   const ist = toIST(date);
   // IST midnight in UTC = previous day 18:30 UTC
-  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), -5, -30, 0, 0));
+  return new Date(
+    Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), -5, -30, 0, 0),
+  );
 };
 
 const getDayEnd = (date = new Date()) => {
   const ist = toIST(date);
-  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), 18, 29, 59, 999));
+  return new Date(
+    Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), 18, 29, 59, 999),
+  );
 };
 
 const getDateKey = (date) => getDayStart(date).toISOString();
@@ -30,9 +35,7 @@ const buildStatusContext = (date, policy) => {
   const normalizedDate = getDayStart(date);
   const officeEnd = buildTimeForDate(normalizedDate, policy.officeEndTime);
 
-  return (
-    getDayStart(normalizedDate) < getDayStart(now) || now > officeEnd
-  );
+  return getDayStart(normalizedDate) < getDayStart(now) || now > officeEnd;
 };
 
 const getAttendancePolicy = async () => {
@@ -79,9 +82,7 @@ const buildGeneratedAttendance = ({ employee = null, date, policy }) => {
 };
 
 const getMonthDateRange = (month) => {
-  const [year, monthIndex] = String(month)
-    .split("-")
-    .map(Number);
+  const [year, monthIndex] = String(month).split("-").map(Number);
 
   const start = new Date(year, monthIndex - 1, 1);
   const end = new Date(year, monthIndex, 0, 23, 59, 59, 999);
@@ -235,6 +236,13 @@ const checkOut = async ({ requester }) => {
   const policy = await getAttendancePolicy();
   const dayStart = getDayStart();
   const dayEnd = getDayEnd();
+  const now = new Date();
+
+  // ✅ ADD THIS — block manual checkout after office end
+  const officeEnd = buildTimeForDate(now, policy.officeEndTime);
+  if (now > officeEnd) {
+    throw new AppError("Cannot check out after office hours end. Auto checkout will handle it.", 400);
+  }
 
   const record = await Attendance.findOne({
     employee: requester.employeeId,
@@ -249,18 +257,13 @@ const checkOut = async ({ requester }) => {
     throw new AppError("Already checked out for today", 400);
   }
 
-  record.checkOut = new Date();
+  record.checkOut = now;
   record.autoCheckedOut = false;
 
   const diffMs = record.checkOut.getTime() - record.checkIn.getTime();
-
-  record.workingHours = Math.max(
-    0,
-    Number((diffMs / (1000 * 60 * 60)).toFixed(2)),
-  );
+  record.workingHours = Math.max(0, Number((diffMs / (1000 * 60 * 60)).toFixed(2)));
 
   await record.save();
-
   return formatAttendance(record, policy);
 };
 
@@ -430,8 +433,8 @@ const getAdminAttendanceData = async ({ filters = {} }) => {
     });
   });
 
-records.sort((a, b) => {
-  const dateDiff = new Date(a.date) - new Date(b.date);
+  records.sort((a, b) => {
+    const dateDiff = new Date(a.date) - new Date(b.date);
     if (dateDiff !== 0) return dateDiff;
     return String(a.employee?.name || "").localeCompare(
       String(b.employee?.name || ""),
@@ -448,10 +451,7 @@ const listAttendanceForAdmin = async ({ filters }) => {
   return buildPaginationResult({
     data:
       filters.page || filters.limit
-        ? records.slice(
-            pagination.skip,
-            pagination.skip + pagination.limit,
-          )
+        ? records.slice(pagination.skip, pagination.skip + pagination.limit)
         : records,
     total: records.length,
     page: pagination.page,
@@ -509,7 +509,9 @@ const getAttendanceDashboard = async () => {
     Attendance.find({
       date: { $gte: dayStart, $lte: dayEnd },
       checkIn: { $ne: null },
-    }).select("checkIn checkOut checkInStatus workingHours date autoCheckedOut"),
+    }).select(
+      "checkIn checkOut checkInStatus workingHours date autoCheckedOut",
+    ),
   ]);
 
   const isAfterOfficeEnd = today > officeEnd;
