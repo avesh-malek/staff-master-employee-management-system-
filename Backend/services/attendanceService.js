@@ -7,16 +7,20 @@ const { getPagination, buildPaginationResult } = require("../utils/pagination");
 const { scheduleAutoCheckout } = require("./cronJobs");
 const { getStatus, buildTimeForDate } = require("../utils/attendanceStatus");
 
+const toIST = (date = new Date()) => {
+  const utcMs = new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000;
+  return new Date(utcMs + 5.5 * 60 * 60000);
+};
+
 const getDayStart = (date = new Date()) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const ist = toIST(date);
+  // IST midnight in UTC = previous day 18:30 UTC
+  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), -5, -30, 0, 0));
 };
 
 const getDayEnd = (date = new Date()) => {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
+  const ist = toIST(date);
+  return new Date(Date.UTC(ist.getFullYear(), ist.getMonth(), ist.getDate(), 18, 29, 59, 999));
 };
 
 const getDateKey = (date) => getDayStart(date).toISOString();

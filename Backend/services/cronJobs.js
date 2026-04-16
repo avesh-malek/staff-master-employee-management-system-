@@ -2,6 +2,8 @@ const cron = require("node-cron");
 const Attendance = require("../models/Attendance");
 const AttendancePolicy = require("../models/AttendancePolicy");
 
+const { buildTimeForDate } = require("../utils/attendanceStatus");
+
 let autoCheckoutJob = null; // 🔥 store current job
 
 // helpers
@@ -17,14 +19,7 @@ const getDayEnd = (date = new Date()) => {
   return d;
 };
 
-const buildTimeForDate = (date, timeValue) => {
-  const [hours, minutes] = String(timeValue || "00:00")
-    .split(":")
-    .map(Number);
-  const d = new Date(date);
-  d.setHours(hours || 0, minutes || 0, 0, 0);
-  return d;
-};
+
 
 // 🔥 MAIN FUNCTION
 const scheduleAutoCheckout = async () => {
